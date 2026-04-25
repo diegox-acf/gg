@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:20px;font-family:'Roboto',sans-serif;}
+.label{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c68;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.label::before{content:'';display:block;width:3px;height:12px;background:#d4ff00;flex-shrink:0;}
+.field{margin-bottom:14px;}
+.fl{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#6c6c68;display:block;margin-bottom:6px;}
+.inp{width:100%;background:#0e0e0e;border:1px solid #1e1e1e;padding:10px 14px;color:#f0f0ec;font-family:'Roboto',sans-serif;font-size:13px;outline:none;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,0 100%);}
+.inp::placeholder{color:#333330;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+</style>
+</head>
+<body>
+  <div class="row2">
+    <div class="field">
+      <span class="fl">Default</span>
+      <input class="inp" placeholder="Search products…">
+    </div>
+    <div class="field">
+      <span class="fl">Focused</span>
+      <input class="inp" value="RTX 4090" style="border-color:#d4ff00;">
+    </div>
+  </div>
+  <div class="row2">
+    <div class="field">
+      <span class="fl">Error</span>
+      <input class="inp" value="invalid@" style="border-color:#ef4444;">
+      <div style="font-size:11px;color:#ef4444;margin-top:5px;font-family:'Roboto',sans-serif;">Please enter a valid email address.</div>
+    </div>
+    <div class="field">
+      <span class="fl">Disabled</span>
+      <input class="inp" value="Disabled field" disabled style="opacity:0.35;cursor:not-allowed;">
+    </div>
+  </div>
+  <div class="field">
+    <span class="fl">Select</span>
+    <select class="inp" style="background:#0e0e0e;color:#f0f0ec;cursor:pointer;">
+      <option>All Categories</option>
+      <option>GPUs</option>
+      <option>CPUs</option>
+      <option>Peripherals</option>
+    </select>
+  </div>
+</body>
+</html>

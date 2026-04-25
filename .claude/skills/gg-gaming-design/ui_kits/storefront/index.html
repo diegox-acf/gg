@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GG Gaming — Storefront</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+/* ═══════════════════════════════════════════════════
+   FONTS
+═══════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'Orbitron';
+  src: url('../../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype');
+  font-weight: 400 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Roboto';
+  src: url('../../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype');
+  font-weight: 100 900; font-style: normal; font-display: swap;
+}
+
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════ */
+:root {
+  --primary: #d4ff00;
+  --primary-glow: rgba(212,255,0,0.22);
+  --primary-subtle: rgba(212,255,0,0.08);
+
+  --bg:           #070707;
+  --surface:      #0e0e0e;
+  --surface-2:    #161616;
+  --border:       #1e1e1e;
+  --border-bright:#2c2c2c;
+  --text:         #f0f0ec;
+  --text-muted:   #6c6c68;
+  --text-subtle:  #333330;
+  --fg-inverse:   #070707;
+
+  --success:      #16c77a;
+  --success-bg:   rgba(22,199,122,0.1);
+  --warning:      #f5a623;
+  --warning-bg:   rgba(245,166,35,0.1);
+  --danger:       #ef4444;
+  --danger-bg:    rgba(239,68,68,0.1);
+
+  --ease-cyber: cubic-bezier(0.16,1,0.3,1);
+}
+[data-theme="light"] {
+  --bg:           #eaeae5;
+  --surface:      #f3f3ee;
+  --surface-2:    #fafaf8;
+  --border:       #c8c8c0;
+  --border-bright:#a0a09a;
+  --text:         #0a0a08;
+  --text-muted:   #555550;
+  --text-subtle:  #9a9a94;
+  --fg-inverse:   #0a0a08;
+  --primary-glow: rgba(160,200,0,0.2);
+  --primary-subtle: rgba(160,200,0,0.09);
+}
+
+/* ═══════════════════════════════════════════════════
+   BASE RESET
+═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  background: var(--bg);
+  transition: background 300ms;
+}
+
+body {
+  font-family: 'Roboto', system-ui, sans-serif;
+  background: var(--bg);
+  background-image:
+    linear-gradient(rgba(212,255,0,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,255,0,0.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-attachment: fixed;
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 300ms, color 300ms;
+}
+[data-theme="light"] body {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.048) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.048) 1px, transparent 1px);
+}
+
+/* CRT scanlines overlay — dark only */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent 0, transparent 3px,
+    rgba(0,0,0,0.018) 3px, rgba(0,0,0,0.018) 4px
+  );
+  pointer-events: none; z-index: 9000;
+}
+[data-theme="light"] body::after { display: none; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+/* Form reset */
+input, select, button { font-family: inherit; }
+input[type="checkbox"] { accent-color: var(--primary); }
+
+/* ═══════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+═══════════════════════════════════════════════════ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroScan {
+  0%   { top: -2px; opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+@keyframes scanSweep {
+  0%   { top: -80px; opacity: 0; }
+  25%  { opacity: 0.9; }
+  75%  { opacity: 0.9; }
+  100% { top: 120%; opacity: 0; }
+}
+@keyframes lowStockPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+@keyframes heroGlitch {
+  0%,100% { transform: translate(0,0); }
+  20%     { transform: translate(-3px, 0); }
+  40%     { transform: translate(3px, 0); filter: brightness(1.15); }
+  60%     { transform: translate(-1px, 0); }
+  80%     { transform: translate(1px, 0); filter: brightness(1); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes slideInRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes tweakIn {
+  from { transform: translateY(10px) scale(0.97); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes borderGlow {
+  0%,100% { box-shadow: 0 0 8px var(--primary-glow); }
+  50%      { box-shadow: 0 0 24px var(--primary-glow), 0 0 48px var(--primary-glow); }
+}
+
+/* ═══════════════════════════════════════════════════
+   UTILITY / COMPONENT CLASSES
+═══════════════════════════════════════════════════ */
+
+/* Animated card sweep + hover */
+.cyber-card { position: relative; overflow: hidden; }
+
+.hud-corner {
+  position: absolute; width: 10px; height: 10px;
+  opacity: 0; z-index: 10; pointer-events: none;
+  transition: opacity 180ms, width 180ms, height 180ms;
+}
+.hud-tl { top: 0; left: 0; border-top: 1.5px solid var(--primary); border-left: 1.5px solid var(--primary); }
+.hud-br { bottom: 0; right: 0; border-bottom: 1.5px solid var(--primary); border-right: 1.5px solid var(--primary); }
+.hud-corner.visible { opacity: 1; width: 16px; height: 16px; }
+
+.scan-sweep {
+  position: absolute; left: 0; right: 0; top: -80px; height: 80px;
+  background: linear-gradient(180deg, transparent, rgba(212,255,0,0.07), transparent);
+  pointer-events: none; z-index: 5;
+}
+.scan-sweep.active { animation: scanSweep 0.65s ease forwards; }
+
+/* Hero headline glitch on hover */
+.hero-glitch:hover { animation: heroGlitch 0.28s steps(4) forwards; cursor: default; }
+
+/* Staggered fade-in */
+.anim-fadeup { animation: fadeInUp 380ms var(--ease-cyber) both; }
+.anim-fadeup:nth-child(2) { animation-delay: 55ms; }
+.anim-fadeup:nth-child(3) { animation-delay: 110ms; }
+.anim-fadeup:nth-child(4) { animation-delay: 165ms; }
+
+/* Accent glow loop (for active/sale elements) */
+.glow-loop { animation: borderGlow 2.5s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+═══════════════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  .cat-grid    { grid-template-columns: repeat(4,1fr) !important; }
+  .product-grid { grid-template-columns: repeat(3,1fr) !important; }
+  .hero-deco   { display: none !important; }
+}
+@media (max-width: 860px) {
+  .product-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .checkout-grid { grid-template-columns: 1fr !important; }
+  .product-detail-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 768px) {
+  .nav-links   { display: none !important; }
+  .hamburger   { display: flex !important; }
+  .cat-grid    { grid-template-columns: repeat(4,1fr) !important; }
+}
+@media (max-width: 520px) {
+  .product-grid { grid-template-columns: 1fr !important; }
+  .cat-grid    { grid-template-columns: repeat(3,1fr) !important; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Data & state -->
+<script src="components/data.js"></script>
+
+<!-- JSX components -->
+<script type="text/babel" src="components/Nav.jsx"></script>
+<script type="text/babel" src="components/HomePage.jsx"></script>
+<script type="text/babel" src="components/Pages.jsx"></script>
+
+<!-- Tweaks defaults -->
+<script>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "dark",
+  "primaryColor": "#00e5ff"
+}/*EDITMODE-END*/;
+</script>
+
+<!-- App shell -->
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── Color preset helpers ── */
+function hexToGlow(hex, alpha = 0.22) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+const COLOR_PRESETS = [
+  { label:'Yellow', value:'#d4ff00' },
+  { label:'Cyan',   value:'#00e5ff' },
+  { label:'Lime',   value:'#00ff88' },
+  { label:'Orange', value:'#ff6600' },
+  { label:'Magenta',value:'#ff00cc' },
+  { label:'White',  value:'#f0f0ec' },
+];
+
+/* ── Tweaks Panel ── */
+function TweaksPanel({ theme, setTheme, primaryColor, setPrimaryColor, onUpdate }) {
+  const applyTheme = (t) => {
+    setTheme(t);
+    document.documentElement.setAttribute('data-theme', t);
+    onUpdate({ theme: t });
+  };
+  const applyColor = (c) => {
+    setPrimaryColor(c);
+    document.documentElement.style.setProperty('--primary', c);
+    document.documentElement.style.setProperty('--primary-glow', hexToGlow(c, 0.22));
+    document.documentElement.style.setProperty('--primary-subtle', hexToGlow(c, 0.08));
+    onUpdate({ primaryColor: c });
+  };
+
+  return (
+    <div style={{ position:'fixed', bottom:20, right:20, zIndex:9500,
+      background:'var(--surface)', border:'1px solid var(--border)',
+      clipPath:'polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%)',
+      padding:'18px 20px', width:224, boxShadow:'0 8px 40px rgba(0,0,0,0.7)',
+      animation:'tweakIn 220ms var(--ease-cyber) both' }}>
+
+      {/* header */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:18, paddingBottom:12, borderBottom:'1px solid var(--border)' }}>
+        <div style={{ width:3, height:14, background:'var(--primary)', flexShrink:0 }}/>
+        <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:11, fontWeight:700, letterSpacing:'0.12em', color:'var(--text)', textTransform:'uppercase' }}>Tweaks</span>
+      </div>
+
+      {/* Theme */}
+      <div style={{ marginBottom:18 }}>
+        <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, fontWeight:600, letterSpacing:'0.15em', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:10 }}>Theme</div>
+        <div style={{ display:'flex', gap:8 }}>
+          {['dark','light'].map(t => (
+            <button key={t} onClick={() => applyTheme(t)}
+              style={{ flex:1, padding:'8px 0', background: theme===t ? 'var(--primary)' : 'transparent',
+                color: theme===t ? 'var(--fg-inverse)' : 'var(--text-muted)',
+                border:`1px solid ${theme===t ? 'var(--primary)' : 'var(--border)'}`,
+                fontFamily:"'Orbitron',sans-serif", fontSize:10, fontWeight:700,
+                letterSpacing:'0.1em', textTransform:'uppercase', cursor:'pointer',
+                clipPath:'polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px))',
+                transition:'all 150ms' }}>
+              {t === 'dark' ? '◑ Dark' : '○ Light'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Accent Color */}
+      <div>
+        <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:9, fontWeight:600, letterSpacing:'0.15em', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:10 }}>Accent Color</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+          {COLOR_PRESETS.map(({ label, value }) => (
+            <button key={value} onClick={() => applyColor(value)} title={label}
+              style={{ height:36, background:value, border: primaryColor===value ? '2px solid var(--text)' : '2px solid transparent',
+                cursor:'pointer', clipPath:'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
+                transition:'transform 150ms, border-color 150ms',
+                transform: primaryColor===value ? 'scale(1.08)' : 'scale(1)' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+              onMouseLeave={e => e.currentTarget.style.transform = primaryColor===value ? 'scale(1.08)' : 'scale(1)'} />
+          ))}
+        </div>
+        {/* Custom hex input */}
+        <div style={{ marginTop:10, position:'relative' }}>
+          <input defaultValue={primaryColor} placeholder="#d4ff00"
+            onBlur={e => { const v = e.target.value.trim(); if (/^#[0-9a-f]{6}$/i.test(v)) applyColor(v); }}
+            onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+            style={{ width:'100%', background:'var(--surface-2)', border:'1px solid var(--border)',
+              padding:'7px 12px', color:'var(--text)', fontFamily:"'Roboto Mono','Courier New',monospace",
+              fontSize:12, outline:'none', transition:'border-color 150ms',
+              clipPath:'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%)' }}
+            onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+            onBlurCapture={e => e.target.style.borderColor = 'var(--border)'}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── App ── */
+function App() {
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('gg-state') || '{}'); } catch { return {}; } })();
+
+  const [theme,        setTheme]        = useState(TWEAK_DEFAULTS.theme || saved.theme || 'dark');
+  const [primaryColor, setPrimaryColor] = useState(TWEAK_DEFAULTS.primaryColor || saved.primaryColor || '#d4ff00');
+  const [page,         setPage]         = useState(saved.page || 'home');
+  const [pageArg,      setPageArg]      = useState(saved.pageArg ?? null);
+  const [cartOpen,     setCartOpen]     = useState(false);
+  const [cartCount,    setCartCount]    = useState(0);
+  const [showTweaks,   setShowTweaks]   = useState(false);
+
+  /* apply tokens on mount + when they change */
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+  useEffect(() => {
+    document.documentElement.style.setProperty('--primary', primaryColor);
+    document.documentElement.style.setProperty('--primary-glow', hexToGlow(primaryColor, 0.22));
+    document.documentElement.style.setProperty('--primary-subtle', hexToGlow(primaryColor, 0.08));
+  }, [primaryColor]);
+
+  /* cart count */
+  useEffect(() => cartStore.subscribe(items => setCartCount(items.reduce((s,i) => s+i.qty, 0))), []);
+
+  /* tweaks protocol */
+  useEffect(() => {
+    const handler = e => {
+      if (e.data?.type === '__activate_edit_mode')   setShowTweaks(true);
+      if (e.data?.type === '__deactivate_edit_mode') setShowTweaks(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const handleUpdate = (edits) => {
+    try { localStorage.setItem('gg-state', JSON.stringify({ theme, primaryColor, page, pageArg, ...edits })); } catch {}
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+  };
+
+  const navigate = (p, arg = null) => {
+    if (p === 'cart') { setCartOpen(true); return; }
+    setPage(p); setPageArg(arg);
+    window.scrollTo({ top: 0 });
+    try { localStorage.setItem('gg-state', JSON.stringify({ theme, primaryColor, page: p, pageArg: arg })); } catch {}
+  };
+
+  const addToCart = product => cartStore.add(product);
+
+  const renderPage = () => {
+    switch (page) {
+      case 'home':         return <HomePage         onNavigate={navigate} onAddToCart={addToCart} />;
+      case 'category':     return <CategoryPage     categoryId={pageArg || 'gpus'} onNavigate={navigate} onAddToCart={addToCart} />;
+      case 'product':      return <ProductPage      productId={pageArg}  onNavigate={navigate} onAddToCart={addToCart} />;
+      case 'checkout':     return <CheckoutPage     onNavigate={navigate} />;
+      case 'confirmation': return <ConfirmationPage onNavigate={navigate} />;
+      case 'account':      return <AccountPage      onNavigate={navigate} />;
+      default:             return <HomePage         onNavigate={navigate} onAddToCart={addToCart} />;
+    }
+  };
+
+  return (
+    <>
+      {page !== 'confirmation' && (
+        <Nav onNavigate={navigate} cartCount={cartCount} theme={theme} setTheme={t => { setTheme(t); handleUpdate({ theme: t }); }} />
+      )}
+      <div key={page + pageArg} style={{ animation: 'fadeInUp 250ms var(--ease-cyber) both' }}>
+        {renderPage()}
+      </div>
+      {cartOpen && <CartDrawer onClose={() => setCartOpen(false)} onNavigate={navigate} />}
+      {showTweaks && (
+        <TweaksPanel
+          theme={theme} setTheme={setTheme}
+          primaryColor={primaryColor} setPrimaryColor={setPrimaryColor}
+          onUpdate={handleUpdate}
+        />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

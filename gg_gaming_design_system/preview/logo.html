@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#161616;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:28px 24px;font-family:'Roboto',sans-serif;display:flex;flex-direction:column;gap:28px;align-items:flex-start;}
+.lbl{font-family:'Roboto Mono','Courier New',monospace;font-size:9px;color:#333330;margin-bottom:7px;display:block;text-transform:uppercase;letter-spacing:.08em;}
+/* wordmark */
+.wm{display:flex;align-items:baseline;gap:7px;}
+.gg{font-family:'Orbitron',sans-serif;font-weight:900;letter-spacing:.1em;text-transform:uppercase;}
+.gm{font-family:'Roboto',sans-serif;font-weight:500;letter-spacing:.22em;text-transform:uppercase;}
+/* barcode deco */
+.bc{height:20px;opacity:.15;background:repeating-linear-gradient(90deg,#f0f0ec 0,#f0f0ec 2px,transparent 2px,transparent 5px,#f0f0ec 5px,#f0f0ec 7px,transparent 7px,transparent 12px);}
+</style>
+</head>
+<body>
+  <div>
+    <span class="lbl">Primary — dark bg</span>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="wm"><span class="gg" style="font-size:28px;color:#d4ff00;">GG</span><span class="gm" style="font-size:14px;color:#f0f0ec;">Gaming</span></div>
+      <div class="bc" style="width:64px;"></div>
+    </div>
+  </div>
+  <div>
+    <span class="lbl">Accent block variant</span>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="background:#d4ff00;padding:6px 10px;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,7px 100%,0 calc(100% - 7px));"><span class="gg" style="font-size:14px;color:#070707;letter-spacing:.12em;">GG</span></div>
+      <span class="gm" style="font-size:12px;color:#f0f0ec;letter-spacing:.2em;">GAMING</span>
+    </div>
+  </div>
+  <div>
+    <span class="lbl">Light background</span>
+    <div style="background:#eaeae5;padding:12px 20px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%);">
+      <div class="wm"><span class="gg" style="font-size:24px;color:#d4ff00;">GG</span><span class="gm" style="font-size:12px;color:#0a0a08;">GAMING</span></div>
+    </div>
+  </div>
+  <div>
+    <span class="lbl">Nav size</span>
+    <div class="wm">
+      <div style="background:#d4ff00;padding:4px 8px;clip-path:polygon(0 0,calc(100% - 5px) 0,100% 5px,100% 100%,5px 100%,0 calc(100% - 5px));"><span class="gg" style="font-size:13px;color:#070707;letter-spacing:.12em;">GG</span></div>
+      <span class="gm" style="font-size:11px;color:#f0f0ec;letter-spacing:.18em;">GAMING</span>
+    </div>
+  </div>
+</body>
+</html>

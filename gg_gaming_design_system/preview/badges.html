@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:20px;font-family:'Roboto',sans-serif;}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.label{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c68;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.label::before{content:'';display:block;width:3px;height:12px;background:#d4ff00;flex-shrink:0;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;font-size:11px;font-weight:600;font-family:'Roboto',sans-serif;letter-spacing:0.04em;clip-path:polygon(0 0,calc(100% - 5px) 0,100% 5px,100% 100%,5px 100%,0 calc(100% - 5px));}
+.dot{width:5px;height:5px;border-radius:50%;}
+.status{display:inline-flex;align-items:center;padding:4px 12px;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;clip-path:polygon(0 0,calc(100% - 5px) 0,100% 5px,100% 100%,5px 100%,0 calc(100% - 5px));}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+  <div class="label">Stock Badges</div>
+  <div class="row">
+    <span class="badge" style="background:rgba(22,199,122,.1);color:#16c77a;"><span class="dot" style="background:#16c77a;"></span>In Stock</span>
+    <span class="badge" style="background:rgba(245,166,35,.1);color:#f5a623;"><span class="dot" style="background:#f5a623;animation:pulse 1.5s ease infinite;"></span>Low Stock</span>
+    <span class="badge" style="background:rgba(239,68,68,.1);color:#ef4444;"><span class="dot" style="background:#ef4444;"></span>Out of Stock</span>
+  </div>
+
+  <div class="label">Order Status</div>
+  <div class="row">
+    <span class="status" style="background:rgba(245,166,35,.1);color:#f5a623;border:1px solid rgba(245,166,35,.25);">PENDING</span>
+    <span class="status" style="background:rgba(22,199,122,.1);color:#16c77a;border:1px solid rgba(22,199,122,.25);">CONFIRMED</span>
+    <span class="status" style="background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.25);">FAILED</span>
+  </div>
+
+  <div class="label">Product Labels</div>
+  <div class="row">
+    <span class="badge" style="background:rgba(212,255,0,.1);color:#d4ff00;">New Arrival</span>
+    <span class="badge" style="background:rgba(212,255,0,.1);color:#d4ff00;">Flash Sale</span>
+    <span class="badge" style="background:rgba(108,108,104,.12);color:#6c6c68;">Refurbished</span>
+    <span class="badge" style="background:rgba(108,108,104,.12);color:#6c6c68;">Open Box</span>
+  </div>
+</body>
+</html>

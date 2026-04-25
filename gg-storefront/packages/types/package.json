@@ -1,0 +1,15 @@
+{
+  "name": "@gg/types",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@gg/typescript-config": "workspace:*",
+    "typescript": "5.9.2"
+  }
+}

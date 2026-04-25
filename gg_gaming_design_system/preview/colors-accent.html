@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:16px;font-family:'Roboto',sans-serif;}
+.row{display:flex;gap:8px;}
+.swatch{flex:1;min-width:0;}
+.chip{height:52px;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));position:relative;}
+.info{padding:7px 8px;background:#0e0e0e;border:1px solid #1e1e1e;border-top:none;}
+.name{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:600;letter-spacing:0.1em;color:#6c6c68;text-transform:uppercase;margin-bottom:2px;}
+.val{font-family:'Roboto Mono','Courier New',monospace;font-size:9px;color:#333330;}
+.label{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c68;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.label::before{content:'';display:block;width:3px;height:12px;background:#d4ff00;flex-shrink:0;}
+.group{margin-bottom:18px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+</style>
+</head>
+<body>
+<div class="group">
+  <div class="label">Brand &amp; Semantic</div>
+  <div class="row">
+    <div class="swatch">
+      <div class="chip" style="background:#d4ff00;box-shadow:0 0 18px rgba(212,255,0,0.35);"></div>
+      <div class="info"><div class="name">Primary</div><div class="val">#d4ff00</div></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:rgba(212,255,0,0.08);border:1px solid rgba(212,255,0,0.2);"></div>
+      <div class="info"><div class="name">Subtle</div><div class="val">8% primary</div></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:#16c77a;"></div>
+      <div class="info"><div class="name">Success</div><div class="val">#16c77a</div></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:#f5a623;"></div>
+      <div class="info"><div class="name">Warning</div><div class="val">#f5a623</div></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:#ef4444;"></div>
+      <div class="info"><div class="name">Danger</div><div class="val">#ef4444</div></div>
+    </div>
+  </div>
+</div>
+<div class="group">
+  <div class="label">Alternate Presets</div>
+  <div class="row">
+    <div class="swatch"><div class="chip" style="background:#d4ff00;"></div><div class="info"><div class="name">Yellow</div><div class="val">#d4ff00</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#00e5ff;"></div><div class="info"><div class="name">Cyan</div><div class="val">#00e5ff</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#00ff88;"></div><div class="info"><div class="name">Lime</div><div class="val">#00ff88</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#ff6600;"></div><div class="info"><div class="name">Orange</div><div class="val">#ff6600</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#ff00cc;"></div><div class="info"><div class="name">Magenta</div><div class="val">#ff00cc</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#f0f0ec;"></div><div class="info"><div class="name">White</div><div class="val">#f0f0ec</div></div></div>
+  </div>
+</div>
+</body>
+</html>

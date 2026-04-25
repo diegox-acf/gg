@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:16px;font-family:'Roboto',sans-serif;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.card{background:#0e0e0e;border:1px solid #1e1e1e;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));overflow:hidden;}
+.card-hover{border-color:rgba(212,255,0,0.45);box-shadow:0 8px 28px rgba(212,255,0,0.14);transform:translateY(-2px);}
+.card-oos{opacity:0.5;}
+.img{height:100px;background:#161616;display:flex;align-items:center;justify-content:center;position:relative;}
+.img-inner{width:52px;height:52px;background:#1e1e1e;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,7px 100%,0 calc(100% - 7px));display:flex;align-items:center;justify-content:center;}
+.corner{position:absolute;width:9px;height:9px;}
+.tl{top:6px;left:6px;border-top:1.5px solid #d4ff00;border-left:1.5px solid #d4ff00;}
+.br{bottom:6px;right:6px;border-bottom:1.5px solid #d4ff00;border-right:1.5px solid #d4ff00;}
+.body{padding:11px 12px 13px;}
+.brand{font-family:'Orbitron',sans-serif;font-size:8px;font-weight:600;color:#333330;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;}
+.name{font-family:'Roboto',sans-serif;font-weight:600;font-size:12px;color:#f0f0ec;line-height:1.3;margin-bottom:9px;min-height:30px;}
+.foot{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.price{font-family:'Orbitron',sans-serif;font-weight:900;font-size:16px;color:#f0f0ec;letter-spacing:-0.02em;}
+.badge{font-size:10px;font-weight:600;padding:2px 8px;clip-path:polygon(0 0,calc(100% - 4px) 0,100% 4px,100% 100%,4px 100%,0 calc(100% - 4px));font-family:'Roboto',sans-serif;}
+.cta{width:100%;padding:8px;border:none;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px));}
+</style>
+</head>
+<body>
+  <div class="grid">
+    <!-- Default -->
+    <div class="card">
+      <div class="img"><div class="img-inner"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333330" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div>
+      <div class="body">
+        <div class="brand">ASUS ROG</div>
+        <div class="name">GeForce RTX 4080 Super 16G</div>
+        <div class="foot">
+          <span class="price">$849.99</span>
+          <span class="badge" style="background:rgba(22,199,122,.1);color:#16c77a;">In Stock</span>
+        </div>
+        <button class="cta" style="background:#d4ff00;color:#070707;">Add to Cart</button>
+      </div>
+    </div>
+    <!-- Hover/Active -->
+    <div class="card card-hover">
+      <div class="img"><div class="corner tl"></div><div class="corner br"></div><div class="img-inner"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4ff00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div>
+      <div class="body">
+        <div class="brand">MSI</div>
+        <div class="name">GeForce RTX 4090 Gaming X Trio 24G</div>
+        <div class="foot">
+          <span class="price">$1,599.99</span>
+          <span class="badge" style="background:rgba(245,166,35,.1);color:#f5a623;">Low Stock</span>
+        </div>
+        <button class="cta" style="background:#d4ff00;color:#070707;">Add to Cart</button>
+      </div>
+    </div>
+    <!-- Out of stock -->
+    <div class="card card-oos">
+      <div class="img"><div class="img-inner"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333330" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div>
+      <div class="body">
+        <div class="brand">Gigabyte</div>
+        <div class="name">RX 7900 XTX Gaming OC 24G</div>
+        <div class="foot">
+          <span class="price">$949.99</span>
+          <span class="badge" style="background:rgba(239,68,68,.1);color:#ef4444;">Out of Stock</span>
+        </div>
+        <button class="cta" style="background:#1e1e1e;color:#333330;cursor:not-allowed;">Out of Stock</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

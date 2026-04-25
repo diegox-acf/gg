@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+/* ── Tailwind v4: expose GG design tokens as utility classes ── */
+@theme inline {
+  /* Colors */
+  --color-bg-page:       var(--color-bg-page);
+  --color-bg-surface:    var(--color-bg-surface);
+  --color-bg-elevated:   var(--color-bg-elevated);
+  --color-border:        var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-primary:       var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-fg-1:          var(--color-fg-1);
+  --color-fg-2:          var(--color-fg-2);
+  --color-fg-3:          var(--color-fg-3);
+  --color-fg-inverse:    var(--color-fg-inverse);
+  --color-success:       var(--color-success);
+  --color-warning:       var(--color-warning);
+  --color-danger:        var(--color-danger);
+  --color-info:          var(--color-info);
+
+  /* Font families */
+  --font-family-display: var(--font-display);
+  --font-family-sans:    var(--font-body);
+  --font-family-mono:    var(--font-mono);
+}
+
+/* ============================================================
+   GG Gaming — Global Styles & Design Tokens
+   ============================================================ */
+
+/* ── Color tokens ── */
+:root {
+  /* Backgrounds */
+  --color-bg-page:     #070a0e;
+  --color-bg-surface:  #0d1117;
+  --color-bg-elevated: #141b24;
+  --color-bg-overlay:  rgba(7, 10, 14, 0.80);
+
+  /* Borders */
+  --color-border:        #1e2938;
+  --color-border-strong: #2e3d50;
+  --color-border-accent: rgba(255, 53, 0, 0.40);
+
+  /* Brand / Primary */
+  --color-primary:       #ff3500;
+  --color-primary-hover: #e02d00;
+  --color-primary-muted: rgba(255, 53, 0, 0.15);
+
+  /* Text */
+  --color-fg-1:       #f0f4f8;
+  --color-fg-2:       #8a9bb0;
+  --color-fg-3:       #4a5a6a;
+  --color-fg-inverse: #070a0e;
+
+  /* Semantic */
+  --color-success:       #16c77a;
+  --color-success-muted: rgba(22, 199, 122, 0.12);
+  --color-warning:       #f5a623;
+  --color-warning-muted: rgba(245, 166, 35, 0.12);
+  --color-danger:        #ef4444;
+  --color-danger-muted:  rgba(239, 68, 68, 0.12);
+  --color-info:          #38bdf8;
+  --color-info-muted:    rgba(56, 189, 248, 0.12);
+}
+
+/* ── Semantic aliases ── */
+:root {
+  --bg:       var(--color-bg-page);
+  --surface:  var(--color-bg-surface);
+  --surface-2: var(--color-bg-elevated);
+  --overlay:  var(--color-bg-overlay);
+
+  --border:       var(--color-border);
+  --border-focus: var(--color-primary);
+
+  --text:        var(--color-fg-1);
+  --text-muted:  var(--color-fg-2);
+  --text-subtle: var(--color-fg-3);
+
+  --accent:       var(--color-primary);
+  --accent-hover: var(--color-primary-hover);
+  --accent-bg:    var(--color-primary-muted);
+
+  /* ── shadcn/ui CSS variable aliases ── */
+  --background:             var(--color-bg-page);
+  --foreground:             var(--color-fg-1);
+  --card:                   var(--color-bg-surface);
+  --card-foreground:        var(--color-fg-1);
+  --popover:                var(--color-bg-elevated);
+  --popover-foreground:     var(--color-fg-1);
+  --primary:                var(--color-primary);
+  --primary-foreground:     var(--color-fg-inverse);
+  --secondary:              var(--color-bg-elevated);
+  --secondary-foreground:   var(--color-fg-1);
+  --muted:                  var(--color-bg-surface);
+  --muted-foreground:       var(--color-fg-2);
+  --accent-foreground:      var(--color-fg-1);
+  --destructive:            var(--color-danger);
+  --destructive-foreground: var(--color-fg-1);
+  --input:                  var(--color-border);
+  --ring:                   var(--color-primary);
+  --radius:                 var(--radius-md);
+}
+
+/* ── Typography ── */
+:root {
+  --font-display: var(--font-orbitron), sans-serif;
+  --font-heading: var(--font-orbitron), sans-serif;
+  --font-body:    var(--font-roboto), system-ui, sans-serif;
+  --font-mono:    var(--font-roboto-mono), "Courier New", monospace;
+}
+
+/* ── Type scale ── */
+:root {
+  --text-xs:   0.75rem;   /* 12px */
+  --text-sm:   0.875rem;  /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-md:   1.125rem;  /* 18px */
+  --text-lg:   1.5rem;    /* 24px */
+  --text-xl:   2rem;      /* 32px */
+  --text-2xl:  2.5rem;    /* 40px */
+  --text-3xl:  3.5rem;    /* 56px */
+  --text-4xl:  4.5rem;    /* 72px */
+  --text-5xl:  6rem;      /* 96px */
+  --text-hero: 7.5rem;    /* 120px */
+}
+
+/* ── Spacing ── */
+:root {
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --space-32: 128px;
+}
+
+/* ── Border radius ── */
+:root {
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-full: 9999px;
+}
+
+/* ── Shadows ── */
+:root {
+  --shadow-0: none;
+  --shadow-1: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-3: 0 16px 64px rgba(0, 0, 0, 0.8);
+  --shadow-accent: 0 4px 20px rgba(255, 53, 0, 0.25);
+}
+
+/* ── Motion ── */
+:root {
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:    cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-inout: cubic-bezier(0.85, 0, 0.15, 1);
+
+  --duration-fast:  80ms;
+  --duration-base:  150ms;
+  --duration-slow:  250ms;
+  --duration-enter: 350ms;
+}
+
+/* ── Base resets ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+a {
+  color: var(--text);
+  text-decoration: none;
+  transition: color var(--duration-base) var(--ease-out);
+}
+
+a:hover {
+  color: var(--accent);
+}

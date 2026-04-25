@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:16px;font-family:'Roboto',sans-serif;}
+.row{display:flex;gap:8px;}
+.swatch{flex:1;min-width:0;}
+.chip{height:52px;position:relative;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));}
+.chip-border{position:absolute;inset:0;border:1px solid rgba(255,255,255,0.06);clip-path:inherit;pointer-events:none;}
+.info{padding:7px 8px;background:#0e0e0e;border:1px solid #1e1e1e;border-top:none;}
+.name{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:600;letter-spacing:0.1em;color:#6c6c68;text-transform:uppercase;margin-bottom:2px;}
+.val{font-family:'Roboto Mono','Courier New',monospace;font-size:9px;color:#333330;}
+.label{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c68;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.label::before{content:'';display:block;width:3px;height:12px;background:#d4ff00;flex-shrink:0;}
+.group{margin-bottom:18px;}
+</style>
+</head>
+<body>
+<div class="group">
+  <div class="label">Backgrounds</div>
+  <div class="row">
+    <div class="swatch"><div class="chip" style="background:#070707;border:1px solid #1e1e1e;clip-path:none;"></div><div class="info"><div class="name">Page</div><div class="val">#070707</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#0e0e0e;"><div class="chip-border"></div></div><div class="info"><div class="name">Surface</div><div class="val">#0e0e0e</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#161616;"><div class="chip-border"></div></div><div class="info"><div class="name">Elevated</div><div class="val">#161616</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#1e1e1e;"><div class="chip-border"></div></div><div class="info"><div class="name">Border</div><div class="val">#1e1e1e</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#2c2c2c;"><div class="chip-border"></div></div><div class="info"><div class="name">Border Bright</div><div class="val">#2c2c2c</div></div></div>
+  </div>
+</div>
+</body>
+</html>

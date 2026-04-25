@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:16px;font-family:'Roboto',sans-serif;}
+.row{display:flex;align-items:center;gap:12px;padding:9px 12px;background:#0e0e0e;border:1px solid #1e1e1e;margin-bottom:6px;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,0 100%);}
+.dot{width:28px;height:28px;flex-shrink:0;clip-path:polygon(0 0,calc(100% - 5px) 0,100% 5px,100% 100%,5px 100%,0 calc(100% - 5px));}
+.meta{flex:1;}
+.name{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:600;letter-spacing:0.1em;color:#6c6c68;text-transform:uppercase;margin-bottom:2px;}
+.val{font-family:'Roboto Mono','Courier New',monospace;font-size:9px;color:#333330;}
+.sample{font-family:'Roboto',sans-serif;font-size:13px;}
+.label{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c68;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.label::before{content:'';display:block;width:3px;height:12px;background:#d4ff00;flex-shrink:0;}
+</style>
+</head>
+<body>
+  <div class="label">Foreground Scale</div>
+  <div class="row"><div class="dot" style="background:#f0f0ec;"></div><div class="meta"><div class="name">fg-1 · Primary</div><div class="val">#f0f0ec</div></div><div class="sample" style="color:#f0f0ec">The quick brown fox</div></div>
+  <div class="row"><div class="dot" style="background:#6c6c68;"></div><div class="meta"><div class="name">fg-2 · Muted</div><div class="val">#6c6c68</div></div><div class="sample" style="color:#6c6c68">The quick brown fox</div></div>
+  <div class="row"><div class="dot" style="background:#333330;"></div><div class="meta"><div class="name">fg-3 · Subtle</div><div class="val">#333330</div></div><div class="sample" style="color:#333330">The quick brown fox</div></div>
+  <div class="row"><div class="dot" style="background:#d4ff00;"></div><div class="meta"><div class="name">accent · Links / active</div><div class="val">#d4ff00</div></div><div class="sample" style="color:#d4ff00">The quick brown fox</div></div>
+  <div class="row"><div class="dot" style="background:#070707;border:1px solid #333330;"></div><div class="meta"><div class="name">fg-inverse · On accent</div><div class="val">#070707</div></div><div class="sample" style="color:#6c6c68">Used on primary bg</div></div>
+</body>
+</html>

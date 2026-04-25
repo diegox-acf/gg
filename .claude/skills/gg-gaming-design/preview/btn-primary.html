@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:20px;font-family:'Roboto',sans-serif;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
+.label{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c68;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.label::before{content:'';display:block;width:3px;height:12px;background:#d4ff00;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;border:none;cursor:pointer;transition:all 180ms cubic-bezier(0.16,1,0.3,1);}
+.btn-sm{padding:8px 16px;font-size:10px;}
+.btn-md{padding:11px 22px;font-size:11px;}
+.btn-lg{padding:14px 28px;font-size:12px;}
+.clip{clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));}
+.clip-sm{clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px));}
+/* loading pseudo */
+.loading{position:relative;color:transparent!important;}
+.loading::after{content:'';position:absolute;inset:0;margin:auto;width:13px;height:13px;border:2px solid rgba(0,0,0,0.3);border-top-color:#070707;border-radius:50%;animation:spin 0.6s linear infinite;}
+</style>
+</head>
+<body>
+  <div class="label">Primary Button</div>
+  <div class="row">
+    <button class="btn btn-sm clip-sm" style="background:#d4ff00;color:#070707;">Shop</button>
+    <button class="btn btn-md clip" style="background:#d4ff00;color:#070707;">Add to Cart</button>
+    <button class="btn btn-lg clip" style="background:#d4ff00;color:#070707;">Shop Now ↘</button>
+    <button class="btn btn-md clip loading" style="background:#d4ff00;color:#070707;width:130px;">Add to Cart</button>
+    <button class="btn btn-md clip" style="background:#d4ff00;color:#070707;opacity:0.35;cursor:not-allowed;">Disabled</button>
+  </div>
+
+  <div class="label">Secondary &amp; Ghost</div>
+  <div class="row">
+    <button class="btn btn-sm clip-sm" style="background:transparent;color:#6c6c68;border:1px solid #2c2c2c;">View Details</button>
+    <button class="btn btn-md clip" style="background:transparent;color:#f0f0ec;border:1px solid #2c2c2c;">Continue Shopping</button>
+    <button class="btn btn-md" style="background:transparent;color:#6c6c68;border:none;">Cancel</button>
+    <button class="btn btn-md clip" style="background:#ef4444;color:#fff;">Remove</button>
+  </div>
+
+  <div class="label">Hover States (visual)</div>
+  <div class="row">
+    <button class="btn btn-md clip" style="background:#e8ff1a;color:#070707;transform:translateY(-2px);box-shadow:0 8px 28px rgba(212,255,0,0.35);">Hover Primary</button>
+    <button class="btn btn-md clip" style="background:rgba(212,255,0,0.08);color:#d4ff00;border:1px solid #d4ff00;">Hover Secondary</button>
+    <button class="btn btn-md clip" style="background:#d4ff00;color:#070707;transform:scale(0.96);">Press State</button>
+  </div>
+</body>
+</html>

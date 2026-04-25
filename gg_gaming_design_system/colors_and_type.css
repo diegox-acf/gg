@@ -1,0 +1,344 @@
+/* ============================================================
+   GG Gaming — Design System Tokens
+   colors_and_type.css
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500;600&display=swap');
+
+/* ============================================================
+   COLOR TOKENS — RAW PALETTE
+   ============================================================ */
+
+:root {
+  /* Background tiers */
+  --color-bg-page:      #070a0e;
+  --color-bg-surface:   #0d1117;
+  --color-bg-elevated:  #141b24;
+  --color-bg-overlay:   rgba(7, 10, 14, 0.80);
+
+  /* Border */
+  --color-border:         #1e2938;
+  --color-border-strong:  #2e3d50;
+  --color-border-accent:  rgba(255, 53, 0, 0.40);
+
+  /* Brand / Primary */
+  --color-primary:        #ff3500;
+  --color-primary-hover:  #e02d00;
+  --color-primary-muted:  rgba(255, 53, 0, 0.15);
+
+  /* Text / Foreground */
+  --color-fg-1:  #f0f4f8;   /* Primary text */
+  --color-fg-2:  #8a9bb0;   /* Secondary / muted */
+  --color-fg-3:  #4a5a6a;   /* Disabled / placeholder */
+  --color-fg-inverse: #070a0e; /* Text on light/accent bg */
+
+  /* Semantic — Success */
+  --color-success:       #16c77a;
+  --color-success-muted: rgba(22, 199, 122, 0.12);
+
+  /* Semantic — Warning */
+  --color-warning:       #f5a623;
+  --color-warning-muted: rgba(245, 166, 35, 0.12);
+
+  /* Semantic — Danger */
+  --color-danger:       #ef4444;
+  --color-danger-muted: rgba(239, 68, 68, 0.12);
+
+  /* Semantic — Info */
+  --color-info:       #38bdf8;
+  --color-info-muted: rgba(56, 189, 248, 0.12);
+}
+
+/* ============================================================
+   SEMANTIC COLOR ALIASES
+   ============================================================ */
+
+:root {
+  /* Surfaces */
+  --bg:          var(--color-bg-page);
+  --surface:     var(--color-bg-surface);
+  --surface-2:   var(--color-bg-elevated);
+  --overlay:     var(--color-bg-overlay);
+
+  /* Borders */
+  --border:       var(--color-border);
+  --border-focus: var(--color-primary);
+
+  /* Text */
+  --text:         var(--color-fg-1);
+  --text-muted:   var(--color-fg-2);
+  --text-subtle:  var(--color-fg-3);
+
+  /* Interactive */
+  --accent:       var(--color-primary);
+  --accent-hover: var(--color-primary-hover);
+  --accent-bg:    var(--color-primary-muted);
+}
+
+/* ============================================================
+   TYPOGRAPHY — FONT STACKS
+   ============================================================ */
+
+:root {
+  --font-display: 'Orbitron', sans-serif;
+  --font-heading: 'Orbitron', sans-serif;
+  --font-body:    'Roboto', system-ui, sans-serif;
+  --font-mono:    'Roboto Mono', 'Courier New', monospace;
+}
+
+/* ============================================================
+   TYPOGRAPHY — TYPE SCALE
+   ============================================================ */
+
+:root {
+  --text-xs:   0.75rem;   /* 12px */
+  --text-sm:   0.875rem;  /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-md:   1.125rem;  /* 18px */
+  --text-lg:   1.5rem;    /* 24px */
+  --text-xl:   2rem;      /* 32px */
+  --text-2xl:  2.5rem;    /* 40px */
+  --text-3xl:  3.5rem;    /* 56px */
+  --text-4xl:  4.5rem;    /* 72px */
+  --text-5xl:  6rem;      /* 96px */
+  --text-hero: 7.5rem;    /* 120px */
+}
+
+/* ============================================================
+   TYPOGRAPHY — SEMANTIC ROLES
+   ============================================================ */
+
+:root {
+  /* Display — hero headlines, banners */
+  --display-font:       var(--font-display);
+  --display-weight:     800;
+  --display-size:       var(--text-5xl);
+  --display-line:       0.92;
+  --display-tracking:   0.01em;
+  --display-transform:  uppercase;
+
+  /* H1 — page titles */
+  --h1-font:     var(--font-heading);
+  --h1-weight:   700;
+  --h1-size:     var(--text-3xl);
+  --h1-line:     1.1;
+  --h1-tracking: -0.01em;
+
+  /* H2 — section headings */
+  --h2-font:     var(--font-heading);
+  --h2-weight:   700;
+  --h2-size:     var(--text-2xl);
+  --h2-line:     1.15;
+  --h2-tracking: -0.01em;
+
+  /* H3 — card titles, sub-sections */
+  --h3-font:     var(--font-heading);
+  --h3-weight:   600;
+  --h3-size:     var(--text-xl);
+  --h3-line:     1.2;
+  --h3-tracking: 0;
+
+  /* H4 — label headings */
+  --h4-font:     var(--font-body);
+  --h4-weight:   600;
+  --h4-size:     var(--text-lg);
+  --h4-line:     1.3;
+  --h4-tracking: 0;
+
+  /* Body — default prose */
+  --body-font:     var(--font-body);
+  --body-weight:   400;
+  --body-size:     var(--text-base);
+  --body-line:     1.6;
+  --body-tracking: 0;
+
+  /* Body small — helper text, captions */
+  --body-sm-font:    var(--font-body);
+  --body-sm-weight:  400;
+  --body-sm-size:    var(--text-sm);
+  --body-sm-line:    1.5;
+
+  /* Label — UI labels, nav, buttons */
+  --label-font:    var(--font-body);
+  --label-weight:  500;
+  --label-size:    var(--text-sm);
+  --label-line:    1;
+  --label-tracking: 0.02em;
+
+  /* Code / Mono — specs, SKUs, order IDs */
+  --mono-font:    var(--font-mono);
+  --mono-weight:  400;
+  --mono-size:    var(--text-sm);
+  --mono-line:    1.5;
+}
+
+/* ============================================================
+   SPACING SCALE
+   ============================================================ */
+
+:root {
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --space-32: 128px;
+}
+
+/* ============================================================
+   BORDER RADIUS
+   ============================================================ */
+
+:root {
+  --radius-sm:   4px;   /* badges, chips, dividers */
+  --radius-md:   6px;   /* inputs, buttons */
+  --radius-lg:   8px;   /* cards, containers */
+  --radius-xl:   12px;  /* modals, large surfaces */
+  --radius-full: 9999px; /* pills (avoid for main CTAs) */
+}
+
+/* ============================================================
+   SHADOWS / ELEVATION
+   ============================================================ */
+
+:root {
+  --shadow-0: none;
+  --shadow-1: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-3: 0 16px 64px rgba(0, 0, 0, 0.8);
+  --shadow-accent: 0 4px 20px rgba(255, 53, 0, 0.25);
+}
+
+/* ============================================================
+   MOTION
+   ============================================================ */
+
+:root {
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:    cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-inout: cubic-bezier(0.85, 0, 0.15, 1);
+
+  --duration-fast:   80ms;
+  --duration-base:   150ms;
+  --duration-slow:   250ms;
+  --duration-enter:  350ms;
+}
+
+/* ============================================================
+   BASE RESETS / GLOBAL STYLES
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT STYLES
+   ============================================================ */
+
+h1 {
+  font-family: var(--h1-font);
+  font-weight: var(--h1-weight);
+  font-size: var(--h1-size);
+  line-height: var(--h1-line);
+  letter-spacing: var(--h1-tracking);
+  color: var(--text);
+}
+
+h2 {
+  font-family: var(--h2-font);
+  font-weight: var(--h2-weight);
+  font-size: var(--h2-size);
+  line-height: var(--h2-line);
+  letter-spacing: var(--h2-tracking);
+  color: var(--text);
+}
+
+h3 {
+  font-family: var(--h3-font);
+  font-weight: var(--h3-weight);
+  font-size: var(--h3-size);
+  line-height: var(--h3-line);
+  letter-spacing: var(--h3-tracking);
+  color: var(--text);
+}
+
+h4 {
+  font-family: var(--h4-font);
+  font-weight: var(--h4-weight);
+  font-size: var(--h4-size);
+  line-height: var(--h4-line);
+  letter-spacing: var(--h4-tracking);
+  color: var(--text);
+}
+
+p {
+  font-family: var(--body-font);
+  font-weight: var(--body-weight);
+  font-size: var(--body-size);
+  line-height: var(--body-line);
+  color: var(--text);
+}
+
+small, .text-sm {
+  font-size: var(--text-sm);
+  line-height: var(--body-sm-line);
+  color: var(--text-muted);
+}
+
+code, pre, .mono {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+}
+
+a {
+  color: var(--text);
+  text-decoration: none;
+  transition: color var(--duration-base) var(--ease-out);
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.92;
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.text-accent  { color: var(--accent); }
+.text-muted   { color: var(--text-muted); }
+.text-subtle  { color: var(--text-subtle); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-danger  { color: var(--color-danger); }

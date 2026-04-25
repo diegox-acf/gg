@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Orbitron'; src:url('../assets/fonts/Orbitron-VariableFont_wght.ttf') format('truetype'); font-weight:400 900; font-display:swap; }
+@font-face { font-family:'Roboto';   src:url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype'); font-weight:100 900; font-display:swap; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,255,0,0.025) 1px,transparent 1px);background-size:32px 32px;padding:16px;font-family:'Roboto',sans-serif;}
+.label{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c68;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.label::before{content:'';display:block;width:3px;height:12px;background:#d4ff00;flex-shrink:0;}
+.tag{font-family:'Roboto Mono','Courier New',monospace;font-size:9px;color:#333330;margin-top:5px;display:block;}
+.row{display:flex;gap:12px;align-items:flex-end;margin-bottom:20px;}
+.clip-box{width:52px;height:52px;background:#0e0e0e;border:1px solid #2c2c2c;display:flex;align-items:center;justify-content:center;}
+.sdemo{padding:12px 16px;background:#0e0e0e;border:1px solid #1e1e1e;font-family:'Roboto',sans-serif;font-size:11px;color:#6c6c68;margin-bottom:7px;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%);}
+</style>
+</head>
+<body>
+  <div class="label">Clip-path — Cyborg Corners</div>
+  <div class="row">
+    <div>
+      <div class="clip-box" style="clip-path:polygon(0 0,calc(100%-5px) 0,100% 5px,100% 100%,5px 100%,0 calc(100%-5px));"></div>
+      <span class="tag">4px cut</span>
+    </div>
+    <div>
+      <div class="clip-box" style="clip-path:polygon(0 0,calc(100%-8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100%-8px));"></div>
+      <span class="tag">8px cut</span>
+    </div>
+    <div>
+      <div class="clip-box" style="clip-path:polygon(0 0,calc(100%-12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100%-12px));"></div>
+      <span class="tag">12px cut</span>
+    </div>
+    <div>
+      <div class="clip-box" style="clip-path:polygon(0 0,calc(100%-16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100%-16px));"></div>
+      <span class="tag">16px cut</span>
+    </div>
+  </div>
+
+  <div class="label">Shadows / Elevation</div>
+  <div class="sdemo" style="box-shadow:none;">Level 0 — flat, no shadow</div>
+  <div class="sdemo" style="box-shadow:0 4px 12px rgba(0,0,0,0.5);">Level 1 — hover / lifted</div>
+  <div class="sdemo" style="box-shadow:0 8px 32px rgba(0,0,0,0.7);">Level 2 — dropdown / drawer</div>
+  <div class="sdemo" style="box-shadow:0 16px 64px rgba(0,0,0,0.9);">Level 3 — modal</div>
+  <div class="sdemo" style="box-shadow:0 4px 24px rgba(212,255,0,0.28);border-color:rgba(212,255,0,0.35);">Accent glow — active / primary</div>
+</body>
+</html>
