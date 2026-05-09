@@ -1,0 +1,45 @@
+name: Release — create git tag on merge
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract service and version from branch name
+        id: extract
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          # Matches: gg-{service}/{version}  e.g. gg-catalog/1.0.0
+          if [[ "$BRANCH" =~ ^(gg-[a-z]+(-[a-z]+)*)/([0-9]+\.[0-9]+\.[0-9]+.*)$ ]]; then
+            echo "service=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            echo "version=${BASH_REMATCH[3]}" >> "$GITHUB_OUTPUT"
+            echo "should_tag=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_tag=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push git tag
+        if: steps.extract.outputs.should_tag == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TAG="${{ steps.extract.outputs.service }}/v${{ steps.extract.outputs.version }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "Tagged as $TAG"

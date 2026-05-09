@@ -91,8 +91,8 @@ pnpm build --filter=storefront
 
 Brand, color tokens, typography, and component guidelines are documented in:
 
-- [`gg_gaming_design_system/README.md`](../gg_gaming_design_system/README.md) — full design system reference
-- [`../docs/08-design-system.md`](../docs/08-design-system.md) — canonical token summary
+- [`gg-gaming-design-system/README.md`](../gg-gaming-design-system/README.md) — full design system reference
+- [`../gg-docs/08-design-system.md`](../gg-docs/08-design-system.md) — canonical token summary
 
 Primary font: **Orbitron** (display/brand) + **Roboto** (body) + **Roboto Mono** (specs/codes).
 Primary accent: `#ff3500`.
@@ -109,14 +109,14 @@ Primary accent: `#ff3500`.
 
 ## Documentation
 
-Full project documentation lives in [`../docs/`](../docs/):
+Full project documentation lives in [`../gg-docs/`](../gg-docs/):
 
 | Doc | Description |
 |---|---|
-| [00 — Vision & Scope](../docs/00-vision-and-scope.md) | What we're building and why |
-| [01 — Tech Stack](../docs/01-tech-stack.md) | Stack decisions with rationale |
-| [02 — Business Logic](../docs/02-business-logic-and-use-cases.md) | Domain model and user flows |
-| [03 — Architecture](../docs/03-architecture.md) | System design and service communication |
-| [05 — Roadmap](../docs/05-roadmap.md) | Phased delivery plan |
-| [07 — Design Brief](../docs/07-design-brief.md) | UI screens and user flows |
-| [08 — Design System](../docs/08-design-system.md) | Color tokens, typography, components |
+| [00 — Vision & Scope](../gg-docs/00-vision-and-scope.md) | What we're building and why |
+| [01 — Tech Stack](../gg-docs/01-tech-stack.md) | Stack decisions with rationale |
+| [02 — Business Logic](../gg-docs/02-business-logic-and-use-cases.md) | Domain model and user flows |
+| [03 — Architecture](../gg-docs/03-architecture.md) | System design and service communication |
+| [05 — Roadmap](../gg-docs/05-roadmap.md) | Phased delivery plan |
+| [07 — Design Brief](../gg-docs/07-design-brief.md) | UI screens and user flows |
+| [08 — Design System](../gg-docs/08-design-system.md) | Color tokens, typography, components |

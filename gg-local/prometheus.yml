@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Add service targets here as services come online.
+  # Services running natively use host.docker.internal to reach the host.
+  # Example:
+  # - job_name: catalog
+  #   static_configs:
+  #     - targets: ['host.docker.internal:8080']
+  # - job_name: orders
+  #   static_configs:
+  #     - targets: ['host.docker.internal:8081']
+  # - job_name: inventory
+  #   static_configs:
+  #     - targets: ['host.docker.internal:8082']

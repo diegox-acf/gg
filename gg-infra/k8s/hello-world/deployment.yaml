@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gg-hello-world
+  namespace: gg-hello-world
+  labels:
+    app: gg-hello-world
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gg-hello-world
+  template:
+    metadata:
+      labels:
+        app: gg-hello-world
+      annotations:
+        # OTel auto-injection (if using the operator); otherwise service sets OTEL_EXPORTER_OTLP_ENDPOINT
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: gg-hello-world
+      containers:
+        - name: hello-world
+          # Tag updated by CI after each push to main
+          image: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/gg-hello-world:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://opentelemetry-collector.monitoring:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "gg-hello-world"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=gg-hello-world,service.version=0.1.0,deployment.environment=dev"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: gg-hello-world

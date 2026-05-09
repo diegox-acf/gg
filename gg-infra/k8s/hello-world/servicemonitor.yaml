@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gg-hello-world
+  namespace: gg-hello-world
+  labels:
+    # Must match kube-prometheus-stack's serviceMonitorSelector
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: gg-hello-world
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

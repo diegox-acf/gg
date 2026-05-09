@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package catalog.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/diegox-acf/gg-catalog/gen/catalog/v1;catalogv1";
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum StockStatus {
+  STOCK_STATUS_UNSPECIFIED  = 0;
+  STOCK_STATUS_IN_STOCK     = 1;
+  STOCK_STATUS_LOW_STOCK    = 2;
+  STOCK_STATUS_OUT_OF_STOCK = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Messages
+// ---------------------------------------------------------------------------
+
+message Product {
+  int64                     id           = 1;
+  string                    sku          = 2;
+  string                    slug         = 3;
+  string                    name         = 4;
+  string                    brand        = 5;
+  string                    description  = 6;
+  string                    category_id  = 7;
+  int64                     price_cents  = 8;
+  string                    currency     = 9;
+  string                    specs_json   = 10; // JSON blob of key-value spec pairs
+  StockStatus               stock_status = 11;
+  google.protobuf.Timestamp created_at   = 12;
+  google.protobuf.Timestamp updated_at   = 13;
+}
+
+message Category {
+  string id    = 1;
+  string slug  = 2;
+  string label = 3;
+  string icon  = 4;
+}
+
+// ---------------------------------------------------------------------------
+// ListProducts
+// ---------------------------------------------------------------------------
+
+message ListProductsRequest {
+  string category_id = 1; // optional filter
+  int32  page_size   = 2; // default 20, max 100
+  string page_token  = 3; // opaque cursor from previous response
+}
+
+message ListProductsResponse {
+  repeated Product products        = 1;
+  string           next_page_token = 2; // empty when no more pages
+}
+
+// ---------------------------------------------------------------------------
+// GetProduct
+// ---------------------------------------------------------------------------
+
+message GetProductRequest {
+  int64 id = 1;
+}
+
+message GetProductResponse {
+  Product product = 1;
+}
+
+// ---------------------------------------------------------------------------
+// GetProductBySlug
+// ---------------------------------------------------------------------------
+
+message GetProductBySlugRequest {
+  string slug = 1;
+}
+
+message GetProductBySlugResponse {
+  Product product = 1;
+}
+
+// ---------------------------------------------------------------------------
+// GetProductsByIds
+// ---------------------------------------------------------------------------
+
+message GetProductsByIdsRequest {
+  repeated int64 ids = 1;
+}
+
+message GetProductsByIdsResponse {
+  repeated Product products = 1;
+}
+
+// ---------------------------------------------------------------------------
+// ListCategories
+// ---------------------------------------------------------------------------
+
+message ListCategoriesRequest {}
+
+message ListCategoriesResponse {
+  repeated Category categories = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+service CatalogService {
+  rpc ListProducts(ListProductsRequest)         returns (ListProductsResponse);
+  rpc GetProduct(GetProductRequest)             returns (GetProductResponse);
+  rpc GetProductBySlug(GetProductBySlugRequest) returns (GetProductBySlugResponse);
+  rpc GetProductsByIds(GetProductsByIdsRequest) returns (GetProductsByIdsResponse);
+  rpc ListCategories(ListCategoriesRequest)     returns (ListCategoriesResponse);
+}

@@ -1,0 +1,39 @@
+name: gg-catalog — CI
+
+on:
+  push:
+    branches:
+      - 'gg-catalog/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'gg-catalog/**'
+      - 'gg-proto/gen/**'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          working-directory: gg-catalog
+
+      - name: Test
+        working-directory: gg-catalog
+        run: go test ./...
+
+      - name: Build
+        working-directory: gg-catalog
+        run: go build ./...
+
+      - name: Docker build
+        run: docker build -t gg-catalog:${{ github.sha }} gg-catalog

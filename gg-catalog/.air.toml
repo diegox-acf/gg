@@ -1,0 +1,17 @@
+[build]
+  cmd         = "go build -o ./tmp/catalog ./cmd/catalog"
+  bin         = "./tmp/catalog"
+  full_bin    = "./tmp/catalog"
+  include_ext = ["go", "toml", "sql"]
+  exclude_dir = ["gen", "proto", "migrations", "tmp", "vendor"]
+  delay       = 500
+  rerun       = false
+
+[log]
+  time = true
+
+[color]
+  build   = "yellow"
+  runner  = "green"
+  watcher = "cyan"
+  app     = ""

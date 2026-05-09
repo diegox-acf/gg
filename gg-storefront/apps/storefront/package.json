@@ -13,9 +13,11 @@
   "dependencies": {
     "@gg/types": "workspace:*",
     "@gg/ui": "workspace:*",
+    "lucide-react": "^1.11.0",
     "next": "16.2.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@gg/eslint-config": "workspace:*",

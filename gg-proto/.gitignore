@@ -1,0 +1,8 @@
+# Go
+*.exe
+*.test
+*.out
+vendor/
+
+# Java stubs are generated at build time by Gradle protobuf plugin — never commit
+gen/java/

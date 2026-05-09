@@ -1,0 +1,39 @@
+name: gg-inventory — CI
+
+on:
+  push:
+    branches:
+      - 'gg-inventory/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'gg-inventory/**'
+      - 'gg-proto/gen/**'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          working-directory: gg-inventory
+
+      - name: Test
+        working-directory: gg-inventory
+        run: go test ./...
+
+      - name: Build
+        working-directory: gg-inventory
+        run: go build ./...
+
+      - name: Docker build
+        run: docker build -t gg-inventory:${{ github.sha }} gg-inventory

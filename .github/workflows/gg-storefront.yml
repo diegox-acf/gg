@@ -1,0 +1,45 @@
+name: gg-storefront — CI
+
+on:
+  push:
+    branches:
+      - 'gg-storefront/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'gg-storefront/**'
+      - 'gg-proto/gen/ts/**'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: gg-storefront/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: gg-storefront
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: gg-storefront
+        run: pnpm lint
+
+      - name: Type check
+        working-directory: gg-storefront
+        run: pnpm tsc --noEmit
+
+      - name: Build
+        working-directory: gg-storefront
+        run: pnpm build

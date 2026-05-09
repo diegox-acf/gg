@@ -1,0 +1,37 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - revive
+    - gosec
+    - bodyclose
+    - noctx
+    - sqlclosecheck
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/diegox-acf/gg-catalog
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+  gosec:
+    excludes:
+      - G115  # integer overflow false positives in protobuf generated code
+
+issues:
+  exclude-dirs:
+    - gen
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck

@@ -1,0 +1,59 @@
+name: gg-proto — codegen
+
+on:
+  push:
+    branches:
+      - 'gg-proto/**'
+    paths:
+      - 'gg-proto/**/*.proto'
+      - 'gg-proto/buf.yaml'
+      - 'gg-proto/buf.gen.*.yaml'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install Go proto plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install TypeScript proto plugins
+        run: npm install -g @bufbuild/protoc-gen-es @connectrpc/protoc-gen-connect-es
+
+      - uses: bufbuild/buf-setup-action@v1
+
+      - name: Generate stubs
+        working-directory: gg-proto
+        run: |
+          buf generate --template buf.gen.go-catalog.yaml --path catalog/
+          buf generate --template buf.gen.go-inventory.yaml --path inventory/
+          buf generate --template buf.gen.ts.yaml
+
+      - name: Commit generated stubs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add gg-catalog/gen gg-inventory/gen gg-storefront/packages/types/gen
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(proto): regenerate stubs [skip ci]"
+            git push
+          fi
