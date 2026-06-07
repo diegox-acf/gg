@@ -62,23 +62,35 @@ This is the "aggressive 4–6 weeks, core features first" plan. If it slips to 8
    (verified: one trace contains `gg-storefront-bff` render/`fetch` spans → `gg-catalog`
    `http` spans → `otelpgx` `query`/`pool.acquire` Postgres spans)
 
-## Phase 2 — Identity and cart (Week 3)
+## Phase 2 — Identity and cart (COMPLETE)
 
 **Goal:** A shopper can register, log in, and assemble a cart.
 
 **Deliverables:**
-- Keycloak deployed via docker-compose (see ADR-005)
-- OIDC login flow working from Next.js
-- Session cookie management in BFF
-- Redis-backed cart with TTL; guest and authenticated cart strategies
-- Cart UI: add/remove/update quantity, persistent across sessions for logged-in users
-- JWT validation middleware in Catalog (hardens the service even though catalog is mostly public)
+- ✅ Keycloak deployed via docker-compose (ADR-005 finalized by ADR-017); `gg` realm as code
+- ✅ Login/registration from Next.js — custom branded forms via Auth.js Credentials
+  provider + Keycloak password grant (not hosted pages); registration via Admin API
+- ✅ Session cookie management in BFF (HTTP-only JWT session, token refresh, edge-safe middleware)
+- ✅ Redis-backed cart with TTL; guest (7d) and authenticated (90d) cart strategies
+- ✅ Cart UI: add/remove/update quantity via Server Actions (no client-side persistence),
+  optimistic UI, persistent across sessions for logged-in users
+- ✅ JWT validation middleware in Catalog (optional Keycloak JWKS auth; public reads still work)
 
 **Exit criteria:**
-1. A new user can register, log out, log back in
-2. Guest cart persists for 7 days; logging in merges guest cart with any saved user cart
-3. Cart operations are reflected in Redis within 100ms p95
-4. Logged-out → logged-in flow does not lose cart contents
+1. ✅ A new user can register, log out, log back in (verified end-to-end)
+2. ✅ Guest cart persists for 7 days; logging in merges guest cart with any saved user cart
+3. ✅ Cart operations are reflected in Redis within 100ms p95 (local Redis, sub-ms)
+4. ✅ Logged-out → logged-in flow does not lose cart contents (merge sums quantities, verified)
+
+**Notes:**
+- Identity = Keycloak (ADR-017); `demo` / `demo12345` seed user in realm `gg`.
+- Auth: `next-auth@5` Credentials provider → Keycloak Direct Access Grant; session is
+  identity-only (no raw tokens leaked to the client); `/account` + `/checkout` are protected.
+- Cart source of truth is Redis; `CartProvider` is a server-seeded client mirror with
+  `useOptimistic`. Guest identity via HTTP-only `gg-cart-id` cookie; merge runs in the
+  Auth.js signIn event.
+- Catalog validates Bearer tokens when present (`OIDC_ISSUER`); browser→BFF→Catalog→Postgres
+  tracing remains connected.
 
 ## Phase 3 — The saga (Week 4)
 
