@@ -142,7 +142,13 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
 
   tempo:
-    image: grafana/tempo:latest
+    # Pinned: `latest` currently resolves to a 3.0 release candidate whose config
+    # schema rejects this file (ingester/compactor blocks moved). 2.6.x is stable.
+    image: grafana/tempo:2.6.1
+    # Run as root: Tempo's image user can't create block dirs in the root-owned
+    # named volume otherwise (mkdir /tmp/tempo/blocks: permission denied). Fine
+    # for local dev.
+    user: root
     ports:
       - "3200:3200"    # HTTP — Grafana datasource endpoint
     volumes:
@@ -165,6 +171,26 @@ services:
       - prometheus
       - loki
       - tempo
+
+  # ───────────────────────────────────────────────────────────────
+  # Application services (add as they are containerized)
+  # ───────────────────────────────────────────────────────────────
+  #
+  # catalog:
+  #   build: ../gg-catalog
+  #   ports:
+  #     - "8080:8080"
+  #     - "9090:9090"
+  #   environment:
+  #     DATABASE_URL: postgres://postgres:postgres@postgres-catalog:5432/gg_catalog
+  #     IMAGE_STORE_TYPE: local
+  #     IMAGE_STORE_PATH: /data/images
+  #     IMAGE_BASE_URL: http://localhost:8080
+  #   volumes:
+  #     - ./volumes/images:/data/images
+  #   depends_on:
+  #     postgres-catalog:
+  #       condition: service_healthy
 
 volumes:
   postgres_catalog_data:

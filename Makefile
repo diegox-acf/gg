@@ -1,20 +1,8 @@
-.PHONY: proto-gen proto-lint proto-breaking \
-        catalog-build catalog-test \
+.PHONY: catalog-build catalog-test \
         orders-build orders-test \
         inventory-build inventory-test \
         storefront-dev storefront-build \
         infra-up infra-down
-
-# --- Proto ---
-
-proto-gen:
-	cd gg-proto && buf generate
-
-proto-lint:
-	cd gg-proto && buf lint
-
-proto-breaking:
-	cd gg-proto && buf breaking --against '.git#branch=main'
 
 # --- Catalog (Go) ---
 

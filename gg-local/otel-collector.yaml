@@ -18,14 +18,10 @@ exporters:
     tls:
       insecure: true
 
-  # Logs → Loki
-  loki:
-    endpoint: http://loki:3100/loki/api/v1/push
-    default_labels_enabled:
-      exporter: false
-      job: true
-      instance: true
-      level: true
+  # Logs → Loki via its native OTLP endpoint (the standalone `loki` exporter was
+  # removed from the collector-contrib image; otlphttp is the supported path).
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
 
   # Debug — prints to otel-collector stdout (useful during dev)
   debug:
@@ -40,4 +36,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [loki]
+      exporters: [otlphttp/loki]

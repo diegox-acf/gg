@@ -9,7 +9,6 @@ on:
       - main
     paths:
       - 'gg-catalog/**'
-      - 'gg-proto/gen/**'
 
 jobs:
   ci:
