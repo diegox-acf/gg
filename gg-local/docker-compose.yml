@@ -51,6 +51,50 @@ services:
       timeout: 5s
       retries: 10
 
+  postgres-keycloak:
+    image: postgres:17-alpine
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - postgres_keycloak_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ───────────────────────────────────────────────────────────────
+  # Identity — Keycloak (OIDC). Realm `gg` imported on first boot.
+  # See ADR-005 (finalized: Keycloak chosen over Cognito).
+  # ───────────────────────────────────────────────────────────────
+  keycloak:
+    # Pinned (latest-tag drift bites — see Tempo). 26.x is the current stable line.
+    image: quay.io/keycloak/keycloak:26.1
+    command: ["start-dev", "--import-realm"]
+    ports:
+      - "8081:8080"    # 8080 is the catalog service
+    environment:
+      # Bootstrap admin (26.x env names; creates the master-realm admin)
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Persist to Postgres so registered users survive restarts
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    depends_on:
+      postgres-keycloak:
+        condition: service_healthy
+
   # ───────────────────────────────────────────────────────────────
   # Cache
   # ───────────────────────────────────────────────────────────────
@@ -196,6 +240,7 @@ volumes:
   postgres_catalog_data:
   postgres_orders_data:
   postgres_inventory_data:
+  postgres_keycloak_data:
   kafka_data:
   prometheus_data:
   tempo_data:

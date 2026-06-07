@@ -449,3 +449,51 @@ Remove gRPC entirely. All sync service-to-service calls use REST (HTTP/JSON). Th
 - **Keep gRPC but defer codegen to build time:** Rejected. Still requires buf + protoc in every build environment; no simplification.
 - **Keep gRPC for Orders→Inventory only:** Rejected. Inventory is not yet implemented; this is a premature optimization.
 - **ConnectRPC (gRPC-over-HTTP):** Rejected. Same codegen overhead; REST is simpler and sufficient.
+
+---
+
+## ADR-017: Keycloak as the identity provider (finalizes ADR-005)
+
+**Status:** Accepted
+**Date:** 2026-06-07
+
+**Context:**
+ADR-005 chose a *managed* identity provider but deferred the final pick between
+**Keycloak self-hosted** and **AWS Cognito** to the start of Phase 2, with the deciding
+factor being AWS budget vs. learning interest. Since then, ADR-013 removed AWS/EKS
+entirely — the platform is now docker-compose, local/dev forever. Cognito is an AWS-only
+managed service and would reintroduce a hard AWS dependency, directly contradicting
+ADR-013. The roadmap and tech-stack already assume Keycloak.
+
+**Decision:**
+Use **Keycloak** (self-hosted via docker-compose) as the OIDC provider for all of GG
+Gaming. It runs as the `keycloak` service in `gg-local/` (image `quay.io/keycloak/keycloak:26.1`,
+`start-dev --import-realm`, host port **8081**), backed by a private `postgres-keycloak`
+database so registered users persist across restarts. The `gg` realm is defined as code in
+`gg-local/keycloak/realm-export.json` and imported on first boot.
+
+Realm shape:
+- Realm `gg`; realm roles `customer` (default shopper) and `admin`.
+- One confidential client `gg-storefront` for the Next.js BFF, with **Direct Access Grants**
+  enabled (password grant — powers the custom branded login per the Phase 2 decision) and a
+  **service account** granted `realm-management` roles `manage-users`/`view-users`/`query-users`
+  (powers self-registration via the Admin REST API).
+- A seed `demo` / `demo12345` user for local testing.
+
+**Consequences:**
+- No AWS dependency; consistent with ADR-013. Full control over realms, clients, and token
+  claims — better for the security learning goal (priority #6).
+- We own Keycloak's ops (upgrades, DB) — acceptable at local/dev scale; the image is pinned
+  to avoid the `latest`-tag config drift already seen with Tempo.
+- Issuer is `http://localhost:8081/realms/gg` for host-run services; if services later move
+  into the compose network, `KC_HOSTNAME`/issuer config must be revisited.
+- Tokens are validated at the BFF; downstream services trust `x-user-id`/`x-user-roles`
+  headers (see architecture), with the Catalog additionally doing optional JWKS validation.
+
+**Alternatives considered:**
+- **AWS Cognito:** Rejected. Contradicts ADR-013 (no AWS); zero-ops benefit is moot when the
+  whole platform is local docker-compose, and it offers less learning value and less control.
+- **Keycloak hosted login pages (redirect/Authorization Code flow):** Rejected for the storefront
+  UX. We use custom branded login/registration forms in the storefront (Auth.js Credentials
+  provider + password grant) so the auth experience matches the GG design system. The hosted
+  Account console remains available for admin use.
