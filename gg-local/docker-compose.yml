@@ -230,6 +230,8 @@ services:
   #     IMAGE_STORE_TYPE: local
   #     IMAGE_STORE_PATH: /data/images
   #     IMAGE_BASE_URL: http://localhost:8080
+  #     # Optional JWT validation (ADR-017). In-container issuer differs from host:
+  #     OIDC_ISSUER: http://keycloak:8080/realms/gg
   #   volumes:
   #     - ./volumes/images:/data/images
   #   depends_on:

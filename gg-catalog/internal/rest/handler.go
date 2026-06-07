@@ -17,7 +17,9 @@ import (
 // NewRouter wires all HTTP routes.
 // imageHandler, when non-nil, is mounted at /images and serves stored image files.
 // Pass nil when using S3 (images are served directly from S3/CDN URLs).
-func NewRouter(logger *slog.Logger, svc *catalog.Service, imageHandler http.Handler) *chi.Mux {
+// authMW, when non-nil, applies optional JWT validation to the /v1 API (Bearer
+// token validated if present; absent token still serves public reads).
+func NewRouter(logger *slog.Logger, svc *catalog.Service, imageHandler http.Handler, authMW func(http.Handler) http.Handler) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -34,6 +36,9 @@ func NewRouter(logger *slog.Logger, svc *catalog.Service, imageHandler http.Hand
 	}
 
 	r.Route("/v1", func(r chi.Router) {
+		if authMW != nil {
+			r.Use(authMW)
+		}
 		r.Get("/categories", listCategoriesHandler(svc))
 		r.Get("/products", listProductsHandler(svc))
 		r.Get("/products/slug/{slug}", getProductBySlugHandler(svc))

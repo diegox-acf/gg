@@ -17,6 +17,7 @@ import (
 	"github.com/diegox-acf/gg-catalog/internal/rest"
 	localstore "github.com/diegox-acf/gg-catalog/internal/storage/local"
 	s3store "github.com/diegox-acf/gg-catalog/internal/storage/s3"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -73,10 +74,15 @@ func main() {
 	repo := postgres.NewRepository(pool)
 	svc := catalog.NewService(repo, images)
 
+	// Optional JWT validation. If OIDC_ISSUER is set, build a Keycloak-backed
+	// verifier (JWKS fetched + cached by go-oidc). If discovery fails, log and
+	// continue without auth so the catalog still serves public reads.
+	authMW := buildAuthMiddleware(ctx, cfg, logger)
+
 	// HTTP server (health + metrics + REST product API + image serving)
 	httpSrv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
-		Handler: rest.NewRouter(logger, svc, imageHandler),
+		Handler: rest.NewRouter(logger, svc, imageHandler, authMW),
 	}
 
 	go func() {
@@ -92,6 +98,22 @@ func main() {
 	if err := httpSrv.Shutdown(context.Background()); err != nil {
 		logger.Error("HTTP shutdown error", "err", err)
 	}
+}
+
+func buildAuthMiddleware(ctx context.Context, cfg *config.Config, logger *slog.Logger) func(http.Handler) http.Handler {
+	if cfg.OIDCIssuer == "" {
+		logger.Info("auth: OIDC_ISSUER not set — JWT validation disabled (public mode)")
+		return nil
+	}
+	provider, err := oidc.NewProvider(ctx, cfg.OIDCIssuer)
+	if err != nil {
+		logger.Warn("auth: OIDC discovery failed — continuing without JWT validation",
+			"issuer", cfg.OIDCIssuer, "err", err)
+		return nil
+	}
+	verifier := provider.Verifier(&oidc.Config{SkipClientIDCheck: true})
+	logger.Info("auth: JWT validation enabled", "issuer", cfg.OIDCIssuer)
+	return rest.OptionalAuth(verifier)
 }
 
 func buildImageStore(cfg *config.Config, logger *slog.Logger) (catalog.ImageStore, http.Handler) {

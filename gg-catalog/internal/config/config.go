@@ -11,6 +11,11 @@ type Config struct {
 	Environment    string `env:"DEPLOYMENT_ENVIRONMENT"      envDefault:"dev"`
 	LogLevel       string `env:"LOG_LEVEL"                   envDefault:"info"`
 
+	// OIDC — Keycloak realm issuer for optional JWT validation (see ADR-017).
+	// Empty disables auth (the catalog runs fully public). When set, a Bearer
+	// token, if present, must be valid; absent tokens still serve public reads.
+	OIDCIssuer string `env:"OIDC_ISSUER" envDefault:""`
+
 	// Image storage
 	// IMAGE_STORE_TYPE: "local" (default) or "s3"
 	ImageStoreType string `env:"IMAGE_STORE_TYPE" envDefault:"local"`
