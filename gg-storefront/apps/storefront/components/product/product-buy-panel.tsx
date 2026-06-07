@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import { cn } from "@gg/ui";
 import type { MockProduct } from "@/lib/mock-data";
-import { MAX_QTY, useCartStore } from "@/lib/cart/cart-store";
+import { MAX_QTY } from "@/lib/cart/types";
+import { useCart } from "@/components/cart/cart-provider";
+import { toCartItem } from "@/lib/cart/to-cart-item";
 import { useUIStore } from "@/lib/ui/ui-store";
 
 interface ProductBuyPanelProps {
@@ -13,20 +15,20 @@ interface ProductBuyPanelProps {
 
 /**
  * Container/Presenter: the server page owns product data; this presenter owns
- * the local buy interaction (quantity + add-to-cart), committing to the Zustand
- * cart store.
+ * the local buy interaction (quantity + add-to-cart), committing via the cart
+ * provider (optimistic mirror + Server Action → Redis).
  */
 export function ProductBuyPanel({ product }: ProductBuyPanelProps) {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
-  const addToCart = useCartStore((s) => s.add);
+  const { addItem } = useCart();
   const openCart = useUIStore((s) => s.openCart);
   const isOOS = product.stockStatus === "out-of-stock";
 
   function handleAdd() {
     if (isOOS) return;
     // Optimistic UI: commit to the cart immediately, then surface confirmation.
-    addToCart(product, qty);
+    addItem(toCartItem(product), qty);
     openCart();
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1800);

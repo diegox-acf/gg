@@ -7,6 +7,7 @@ import {
   decodeClaims,
   rolesFromClaims,
 } from "@/lib/auth/keycloak";
+import { mergeGuestCartIntoUser } from "@/lib/cart/cart-repo";
 
 // Refresh the access token this many ms before it actually expires.
 const REFRESH_SKEW_MS = 30_000;
@@ -98,8 +99,19 @@ const result = NextAuth({
       return session;
     },
   },
-  // NOTE: the guest→user cart merge is wired into events.signIn in Increment C,
-  // once lib/cart/cart-repo.ts exists.
+  events: {
+    // On login, fold any guest cart (cart:guest:<cookie>) into the user's cart
+    // so nothing is lost (exit criterion 4). Never block login on a merge failure.
+    async signIn({ user }) {
+      if (user?.id) {
+        try {
+          await mergeGuestCartIntoUser(user.id);
+        } catch (err) {
+          console.warn("[auth] guest cart merge failed:", err);
+        }
+      }
+    },
+  },
 });
 
 export const handlers: NextAuthResult["handlers"] = result.handlers;

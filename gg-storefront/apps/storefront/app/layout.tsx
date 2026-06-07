@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Orbitron, Roboto, Roboto_Mono } from "next/font/google";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/components/theme/theme-provider";
+import { CartProvider } from "@/components/cart/cart-provider";
 import { CartDrawer } from "@/components/cart/cart-drawer";
+import { getCart } from "@/lib/cart/cart-repo";
 import "./globals.css";
 
 const orbitron = Orbitron({
@@ -31,11 +33,14 @@ export const metadata: Metadata = {
     "Premium gaming hardware: GPUs, CPUs, peripherals and more. Built to win.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Seed the cart mirror from Redis (active user or guest cookie) on every load.
+  const initialCart = await getCart();
+
   return (
     <html
       lang="en"
@@ -48,8 +53,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased">
         <ThemeProvider>
-          {children}
-          <CartDrawer />
+          <CartProvider initialItems={initialCart}>
+            {children}
+            <CartDrawer />
+          </CartProvider>
         </ThemeProvider>
       </body>
     </html>

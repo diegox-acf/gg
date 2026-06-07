@@ -7,7 +7,8 @@ import { cn } from "@gg/ui";
 import { Badge } from "@gg/ui";
 import type { MockProduct } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/mock-data";
-import { useCartStore } from "@/lib/cart/cart-store";
+import { useCart } from "@/components/cart/cart-provider";
+import { toCartItem } from "@/lib/cart/to-cart-item";
 import { useUIStore } from "@/lib/ui/ui-store";
 
 interface ProductCardProps {
@@ -18,7 +19,7 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const scanRef = useRef<HTMLDivElement>(null);
-  const addToCart = useCartStore((s) => s.add);
+  const { addItem } = useCart();
   const openCart = useUIStore((s) => s.openCart);
   const isOOS = product.stockStatus === "out-of-stock";
 
@@ -125,8 +126,9 @@ export function ProductCard({ product }: ProductCardProps) {
             e.preventDefault();
             e.stopPropagation();
             if (isOOS) return;
-            // Optimistic UI: update the cart immediately, then reveal the drawer.
-            addToCart(product);
+            // Optimistic UI: provider updates the mirror immediately, server
+            // action persists to Redis; reveal the drawer right away.
+            addItem(toCartItem(product));
             openCart();
           }}
           className={cn(

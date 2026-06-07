@@ -8,7 +8,7 @@ import { signOut } from "next-auth/react";
 import { IconBtn } from "./icon-btn";
 import { AppearanceMenu } from "../theme/appearance-menu";
 import { AppearanceControls } from "../theme/appearance-controls";
-import { useCartCount, useCartHydrated } from "@/lib/cart/cart-store";
+import { useCart } from "@/components/cart/cart-provider";
 import { useUIStore } from "@/lib/ui/ui-store";
 
 interface Account {
@@ -29,10 +29,9 @@ export function NavClient({ account }: { account: Account | null }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const openCart = useUIStore((s) => s.openCart);
-  const hydrated = useCartHydrated();
-  const count = useCartCount();
-  // Gate on hydration: server + first client render show 0 to avoid a mismatch.
-  const cartCount = hydrated ? count : 0;
+  // Cart is server-seeded via CartProvider, so the count is correct on first
+  // render — no hydration gating needed.
+  const { count: cartCount } = useCart();
 
   return (
     <>

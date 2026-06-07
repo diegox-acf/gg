@@ -7,12 +7,7 @@ import { Lock } from "lucide-react";
 import { Button, Input } from "@gg/ui";
 import { Stepper } from "./stepper";
 import { useCheckoutStep } from "@/lib/hooks/use-checkout-step";
-import {
-  useCartHydrated,
-  useCartItems,
-  useCartStore,
-  useCartSubtotal,
-} from "@/lib/cart/cart-store";
+import { useCart } from "@/components/cart/cart-provider";
 import {
   generateOrderNumber,
   useOrderStore,
@@ -59,10 +54,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export function CheckoutFlow() {
   const router = useRouter();
-  const hydrated = useCartHydrated();
-  const items = useCartItems();
-  const subtotal = useCartSubtotal();
-  const clear = useCartStore((s) => s.clear);
+  const { items, subtotal, clearCart } = useCart();
   const setLastOrder = useOrderStore((s) => s.setLastOrder);
 
   const { current, goTo, next, back } = useCheckoutStep(STEPS.length);
@@ -123,7 +115,7 @@ export function CheckoutFlow() {
     if (!validatePayment()) return;
     setPlacing(true);
     // Mock payment + order creation (Stripe integration lands in a later phase).
-    window.setTimeout(() => {
+    window.setTimeout(async () => {
       setLastOrder({
         number: generateOrderNumber(),
         placedAt: new Date().toISOString(),
@@ -131,14 +123,9 @@ export function CheckoutFlow() {
         totalCents,
         email: shipping.email,
       });
-      clear();
+      await clearCart(); // empties the Redis-backed cart before confirming
       router.push("/checkout/confirmation");
     }, 1500);
-  }
-
-  // Loading skeleton until the persisted cart hydrates.
-  if (!hydrated) {
-    return <div className="h-64 animate-pulse bg-surface" aria-hidden="true" />;
   }
 
   // Empty-cart guard (skipped while an order is being placed).

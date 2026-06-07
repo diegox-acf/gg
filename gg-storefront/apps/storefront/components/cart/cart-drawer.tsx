@@ -4,23 +4,15 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react";
 import { cn } from "@gg/ui";
-import {
-  MAX_QTY,
-  useCartItems,
-  useCartStore,
-  useCartSubtotal,
-} from "@/lib/cart/cart-store";
+import { MAX_QTY } from "@/lib/cart/types";
+import { useCart } from "@/components/cart/cart-provider";
 import { useUIStore } from "@/lib/ui/ui-store";
 import { formatPrice } from "@/lib/mock-data";
 
 export function CartDrawer() {
   const open = useUIStore((s) => s.cartOpen);
   const closeCart = useUIStore((s) => s.closeCart);
-  const items = useCartItems();
-  const subtotal = useCartSubtotal();
-  const setQty = useCartStore((s) => s.setQty);
-  const remove = useCartStore((s) => s.remove);
-  const clear = useCartStore((s) => s.clear);
+  const { items, subtotal, setQty, removeItem, clearCart } = useCart();
 
   // Close on Escape + lock body scroll while open.
   useEffect(() => {
@@ -154,7 +146,7 @@ export function CartDrawer() {
 
                   <button
                     aria-label={`Remove ${item.name}`}
-                    onClick={() => remove(item.id)}
+                    onClick={() => removeItem(item.id)}
                     className="flex h-fit items-center p-1 text-fg-3 transition-colors hover:text-danger"
                   >
                     <Trash2 size={15} />
@@ -184,7 +176,7 @@ export function CartDrawer() {
 
               <div className="mt-2 flex items-center justify-between">
                 <button
-                  onClick={clear}
+                  onClick={() => clearCart()}
                   className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.06em] text-fg-3 transition-colors hover:text-danger"
                 >
                   Clear cart
