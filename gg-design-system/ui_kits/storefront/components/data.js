@@ -51,4 +51,54 @@ const createCartStore = () => {
 
 const cartStore = createCartStore();
 
-Object.assign(window, { PRODUCTS, CATEGORIES, STOCK_LABEL, STOCK_CLASS, cartStore });
+/* ── Theming helpers (shared across files) ── */
+function hexToGlow(hex, alpha = 0.22) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+const COLOR_PRESETS = [
+  { label: 'Toxic Yellow', value: '#d4ff00' },
+  { label: 'Volt Green',   value: '#00ff88' },
+  { label: 'Cyber Cyan',   value: '#00e5ff' },
+  { label: 'Plasma Blue',  value: '#4a8bff' },
+  { label: 'Hot Magenta',  value: '#ff00cc' },
+  { label: 'Synth Purple', value: '#a855f7' },
+  { label: 'Neon Coral',   value: '#ff3d57' },
+  { label: 'Inferno',      value: '#ff6600' },
+  { label: 'Solar Gold',   value: '#ffb800' },
+  { label: 'Off-White',    value: '#f0f0ec' },
+];
+
+/* ── Image map: product-category → atmospheric photo ── */
+/* Using Unsplash photo-ID pattern. onError swaps in a CSS gradient. */
+const IMG = {
+  hero:        'https://images.unsplash.com/photo-1587202372583-49330a15584d?w=1800&q=80&auto=format&fit=crop',
+  heroAlt:     'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=1800&q=80&auto=format&fit=crop',
+  gpu:         'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=900&q=80&auto=format&fit=crop',
+  cpu:         'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=900&q=80&auto=format&fit=crop',
+  motherboard: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=900&q=80&auto=format&fit=crop',
+  memory:      'https://images.unsplash.com/photo-1562976540-1502c2145186?w=900&q=80&auto=format&fit=crop',
+  storage:     'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=900&q=80&auto=format&fit=crop',
+  peripherals: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=900&q=80&auto=format&fit=crop',
+  keyboard:    'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=900&q=80&auto=format&fit=crop',
+  mouse:       'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=900&q=80&auto=format&fit=crop',
+  cases:       'https://images.unsplash.com/photo-1587202372616-b43abea06c2a?w=900&q=80&auto=format&fit=crop',
+  cooling:     'https://images.unsplash.com/photo-1623934199716-dc28818a8bdc?w=900&q=80&auto=format&fit=crop',
+  gallery1:    'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80&auto=format&fit=crop',
+  gallery2:    'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=1200&q=80&auto=format&fit=crop',
+  gallery3:    'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=1200&q=80&auto=format&fit=crop',
+};
+
+function imageForProduct(product) {
+  // Per-product overrides by name keyword first, then category
+  const n = (product.name || '').toLowerCase();
+  if (n.includes('keyboard')) return IMG.keyboard;
+  if (n.includes('mouse') || n.includes('superlight')) return IMG.mouse;
+  return IMG[product.category] || IMG.gpu;
+}
+
+Object.assign(window, {
+  PRODUCTS, CATEGORIES, STOCK_LABEL, STOCK_CLASS, cartStore,
+  hexToGlow, COLOR_PRESETS, IMG, imageForProduct,
+});

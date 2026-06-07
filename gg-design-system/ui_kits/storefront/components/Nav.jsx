@@ -107,7 +107,94 @@ function IconBtn({ onClick, badge, children }) {
   );
 }
 
-function Nav({ onNavigate, cartCount, theme, setTheme }) {
+function ColorPickerBtn({ primaryColor, setPrimaryColor }) {
+  const [open, setOpen] = useState(false);
+  const [h, setH] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const off = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    window.addEventListener('mousedown', off);
+    return () => window.removeEventListener('mousedown', off);
+  }, [open]);
+
+  const apply = (c) => {
+    setPrimaryColor(c);
+    document.documentElement.style.setProperty('--primary', c);
+    document.documentElement.style.setProperty('--primary-glow', hexToGlow(c, 0.22));
+    document.documentElement.style.setProperty('--primary-subtle', hexToGlow(c, 0.08));
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)}
+        onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+        title="Accent color"
+        style={{ background: open || h ? 'var(--primary-subtle)' : 'transparent', border: 'none', cursor: 'pointer',
+          padding: 8, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 150ms',
+          clipPath: (open||h) ? 'polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px))' : 'none' }}>
+        {/* Color swatch chip */}
+        <span style={{ width: 13, height: 13, background: primaryColor,
+          boxShadow: `0 0 8px ${primaryColor}`,
+          clipPath: 'polygon(0 0, calc(100% - 3px) 0, 100% 3px, 100% 100%, 3px 100%, 0 calc(100% - 3px))' }} />
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={open||h ? 'var(--primary)' : 'var(--text-muted)'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition:'transform 200ms', transform: open ? 'rotate(180deg)':'rotate(0)' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{ position:'absolute', top:'calc(100% + 8px)', right:0, width:240,
+          background:'var(--surface)', border:'1px solid var(--border-bright)',
+          boxShadow:'0 12px 48px rgba(0,0,0,0.75)',
+          clipPath:'polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%)',
+          padding:'16px 18px 18px',
+          animation:'tweakIn 200ms var(--ease-cyber) both',
+          zIndex: 200 }}>
+
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, paddingBottom:10, borderBottom:'1px solid var(--border)' }}>
+            <div style={{ width:3, height:11, background:'var(--primary)' }}/>
+            <span style={{ fontFamily:"'Orbitron',sans-serif", fontSize:10, fontWeight:700, letterSpacing:'0.14em', color:'var(--text)', textTransform:'uppercase' }}>Accent Color</span>
+            <span style={{ marginLeft:'auto', fontFamily:"'Roboto Mono','Courier New',monospace", fontSize:10, color:'var(--text-muted)', textTransform:'uppercase' }}>{primaryColor}</span>
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8, marginBottom:12 }}>
+            {COLOR_PRESETS.map(({ label, value }) => {
+              const sel = primaryColor.toLowerCase() === value.toLowerCase();
+              return (
+                <button key={value} onClick={() => apply(value)} title={label}
+                  style={{ position:'relative', aspectRatio:'1/1', background:value,
+                    border: sel ? '2px solid var(--text)' : '2px solid transparent',
+                    cursor:'pointer', padding:0,
+                    boxShadow: sel ? `0 0 14px ${value}` : 'none',
+                    clipPath:'polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px))',
+                    transition:'transform 150ms, box-shadow 150ms',
+                    transform: sel ? 'scale(1.08)' : 'scale(1)' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = sel ? 'scale(1.08)' : 'scale(1)'}>
+                  {sel && <span style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--fg-inverse)', fontWeight:900, fontSize:12 }}>✓</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ fontFamily:"'Orbitron',sans-serif", fontSize:8, fontWeight:600, letterSpacing:'0.18em', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:6 }}>Custom Hex</div>
+          <input defaultValue={primaryColor} placeholder="#d4ff00" maxLength={7}
+            onChange={e => { const v=e.target.value.trim(); if (/^#[0-9a-f]{6}$/i.test(v)) apply(v); }}
+            onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+            style={{ width:'100%', background:'var(--surface-2)', border:'1px solid var(--border)',
+              padding:'8px 12px', color:'var(--text)', fontFamily:"'Roboto Mono','Courier New',monospace",
+              fontSize:12, outline:'none', textTransform:'uppercase',
+              clipPath:'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%)' }}
+            onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+            onBlur={e => e.target.style.borderColor = 'var(--border)'}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Nav({ onNavigate, cartCount, theme, setTheme, primaryColor, setPrimaryColor }) {
   const navItems = [['GPUs','gpus'],['CPUs','cpus'],['Peripherals','peripherals'],['Storage','storage'],['Cases','cases']];
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -126,6 +213,7 @@ function Nav({ onNavigate, cartCount, theme, setTheme }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <ColorPickerBtn primaryColor={primaryColor} setPrimaryColor={setPrimaryColor} />
         <IconBtn onClick={() => onNavigate('account')}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </IconBtn>
@@ -163,4 +251,4 @@ function Nav({ onNavigate, cartCount, theme, setTheme }) {
   );
 }
 
-Object.assign(window, { Logo, NavLink, Btn, Badge, IconBtn, Nav });
+Object.assign(window, { Logo, NavLink, Btn, Badge, IconBtn, Nav, ColorPickerBtn });

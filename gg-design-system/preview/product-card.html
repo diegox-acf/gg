@@ -11,8 +11,13 @@ body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1
 .card{background:#0e0e0e;border:1px solid #1e1e1e;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));overflow:hidden;}
 .card-hover{border-color:rgba(212,255,0,0.45);box-shadow:0 8px 28px rgba(212,255,0,0.14);transform:translateY(-2px);}
 .card-oos{opacity:0.5;}
-.img{height:100px;background:#161616;display:flex;align-items:center;justify-content:center;position:relative;}
-.img-inner{width:52px;height:52px;background:#1e1e1e;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,7px 100%,0 calc(100% - 7px));display:flex;align-items:center;justify-content:center;}
+.img{height:120px;background:#161616;position:relative;overflow:hidden;}
+.img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.img-tint{position:absolute;inset:0;background:#d4ff00;opacity:0.05;mix-blend-mode:color;pointer-events:none;}
+.img-tint-hi{opacity:0.15;}
+.img-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.55) 100%);pointer-events:none;}
+.img-scan{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(255,255,255,0.05) 2px,rgba(255,255,255,0.05) 3px);pointer-events:none;}
+.sku{position:absolute;top:7px;right:9px;font-family:'Roboto Mono','Courier New',monospace;font-size:8px;color:#f0f0ec;opacity:0.7;letter-spacing:0.08em;}
 .corner{position:absolute;width:9px;height:9px;}
 .tl{top:6px;left:6px;border-top:1.5px solid #d4ff00;border-left:1.5px solid #d4ff00;}
 .br{bottom:6px;right:6px;border-bottom:1.5px solid #d4ff00;border-right:1.5px solid #d4ff00;}
@@ -29,7 +34,13 @@ body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1
   <div class="grid">
     <!-- Default -->
     <div class="card">
-      <div class="img"><div class="img-inner"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333330" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div>
+      <div class="img">
+        <img src="https://images.unsplash.com/photo-1591488320449-011701bb6704?w=600&amp;q=80&amp;auto=format&amp;fit=crop" alt="" style="filter:brightness(0.85) contrast(1.02) saturate(0.95);" onerror="this.style.display='none'">
+        <div class="img-tint"></div>
+        <div class="img-vignette"></div>
+        <div class="corner tl" style="opacity:0.5;"></div><div class="corner br" style="opacity:0.5;"></div>
+        <div class="sku">NV-RTX4080S-16G</div>
+      </div>
       <div class="body">
         <div class="brand">ASUS ROG</div>
         <div class="name">GeForce RTX 4080 Super 16G</div>
@@ -42,7 +53,14 @@ body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1
     </div>
     <!-- Hover/Active -->
     <div class="card card-hover">
-      <div class="img"><div class="corner tl"></div><div class="corner br"></div><div class="img-inner"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4ff00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div>
+      <div class="img">
+        <img src="https://images.unsplash.com/photo-1591488320449-011701bb6704?w=600&amp;q=80&amp;auto=format&amp;fit=crop" alt="" style="filter:brightness(1.05) contrast(1.06) saturate(1.15);transform:scale(1.08);" onerror="this.style.display='none'">
+        <div class="img-tint img-tint-hi"></div>
+        <div class="img-vignette"></div>
+        <div class="img-scan"></div>
+        <div class="corner tl"></div><div class="corner br"></div>
+        <div class="sku">NV-RTX4090-24G</div>
+      </div>
       <div class="body">
         <div class="brand">MSI</div>
         <div class="name">GeForce RTX 4090 Gaming X Trio 24G</div>
@@ -55,7 +73,12 @@ body{background:#070707;background-image:linear-gradient(rgba(212,255,0,0.025) 1
     </div>
     <!-- Out of stock -->
     <div class="card card-oos">
-      <div class="img"><div class="img-inner"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333330" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div>
+      <div class="img">
+        <img src="https://images.unsplash.com/photo-1591488320449-011701bb6704?w=600&amp;q=80&amp;auto=format&amp;fit=crop" alt="" style="filter:brightness(0.5) contrast(1.02) saturate(0.6) grayscale(0.4);" onerror="this.style.display='none'">
+        <div class="img-vignette"></div>
+        <div class="corner tl" style="opacity:0.3;"></div><div class="corner br" style="opacity:0.3;"></div>
+        <div class="sku">AMD-RX7900XTX-24G</div>
+      </div>
       <div class="body">
         <div class="brand">Gigabyte</div>
         <div class="name">RX 7900 XTX Gaming OC 24G</div>

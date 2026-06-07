@@ -3,7 +3,7 @@
    colors_and_type.css
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Roboto+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ============================================================
    COLOR TOKENS — RAW PALETTE
@@ -80,10 +80,10 @@
    ============================================================ */
 
 :root {
-  --font-display: 'Orbitron', sans-serif;
-  --font-heading: 'Orbitron', sans-serif;
-  --font-body:    'Roboto', system-ui, sans-serif;
-  --font-mono:    'Roboto Mono', 'Courier New', monospace;
+  --font-display: 'Barlow Condensed', 'Impact', sans-serif;
+  --font-heading: 'Barlow', 'Barlow Condensed', sans-serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
 }
 
 /* ============================================================
