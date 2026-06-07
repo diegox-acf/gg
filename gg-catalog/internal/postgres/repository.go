@@ -34,6 +34,7 @@ func (r *Repository) ListProducts(ctx context.Context, filter catalog.ListProduc
 			&p.ID, &p.SKU, &p.Slug, &p.Name, &p.Brand, &p.Description,
 			&p.CategoryID, &p.PriceCents, &p.Currency, &p.Specs,
 			&p.StockStatus, &p.CreatedAt, &p.UpdatedAt,
+			&p.ImageURL, // raw image key; service rewrites to a public URL
 		); err != nil {
 			return nil, "", fmt.Errorf("list products scan: %w", err)
 		}
@@ -58,6 +59,7 @@ func (r *Repository) GetProduct(ctx context.Context, id int64) (*catalog.Product
 		&p.ID, &p.SKU, &p.Slug, &p.Name, &p.Brand, &p.Description,
 		&p.CategoryID, &p.PriceCents, &p.Currency, &p.Specs,
 		&p.StockStatus, &p.CreatedAt, &p.UpdatedAt,
+		&p.ImageURL, // raw image key; service rewrites to a public URL
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get product %d: %w", id, err)
@@ -71,6 +73,7 @@ func (r *Repository) GetProductBySlug(ctx context.Context, slug string) (*catalo
 		&p.ID, &p.SKU, &p.Slug, &p.Name, &p.Brand, &p.Description,
 		&p.CategoryID, &p.PriceCents, &p.Currency, &p.Specs,
 		&p.StockStatus, &p.CreatedAt, &p.UpdatedAt,
+		&p.ImageURL, // raw image key; service rewrites to a public URL
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get product slug %q: %w", slug, err)
@@ -92,6 +95,7 @@ func (r *Repository) GetProductsByIDs(ctx context.Context, ids []int64) ([]*cata
 			&p.ID, &p.SKU, &p.Slug, &p.Name, &p.Brand, &p.Description,
 			&p.CategoryID, &p.PriceCents, &p.Currency, &p.Specs,
 			&p.StockStatus, &p.CreatedAt, &p.UpdatedAt,
+			&p.ImageURL, // raw image key; service rewrites to a public URL
 		); err != nil {
 			return nil, fmt.Errorf("get products by ids scan: %w", err)
 		}

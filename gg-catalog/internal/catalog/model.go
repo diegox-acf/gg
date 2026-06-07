@@ -33,8 +33,12 @@ type Product struct {
 	Currency    string          `json:"currency"`
 	Specs       json.RawMessage `json:"specs"`
 	StockStatus StockStatus     `json:"stock_status"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	// ImageURL is the primary image's public URL (empty if none). Populated by the
+	// service layer from the product's lowest-position image; the repository scans
+	// the raw image key here and the service rewrites it via ImageStore.PublicURL.
+	ImageURL  string    `json:"image_url,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ProductImage struct {

@@ -1,31 +1,46 @@
 package postgres
 
+// Each product SELECT LEFT JOINs the product's primary image (lowest position).
+// The key is returned as the last column and scanned into Product.ImageURL (raw);
+// the service layer rewrites it to a public URL.
+const primaryImageJoin = `
+LEFT JOIN LATERAL (
+    SELECT key FROM product_images
+    WHERE product_id = p.id
+    ORDER BY position, id
+    LIMIT 1
+) img ON true`
+
 const queryListProducts = `
-SELECT id, sku, slug, name, brand, description, category_id,
-       price_cents, currency, specs, stock_status, created_at, updated_at
-FROM products
-WHERE ($1::text = '' OR category_id = $1)
-  AND ($2::text = '' OR id > $2::bigint)
-ORDER BY id
+SELECT p.id, p.sku, p.slug, p.name, p.brand, p.description, p.category_id,
+       p.price_cents, p.currency, p.specs, p.stock_status, p.created_at, p.updated_at,
+       COALESCE(img.key, '')
+FROM products p` + primaryImageJoin + `
+WHERE ($1::text = '' OR p.category_id = $1)
+  AND ($2::text = '' OR p.id > $2::bigint)
+ORDER BY p.id
 LIMIT $3`
 
 const queryGetProduct = `
-SELECT id, sku, slug, name, brand, description, category_id,
-       price_cents, currency, specs, stock_status, created_at, updated_at
-FROM products
-WHERE id = $1`
+SELECT p.id, p.sku, p.slug, p.name, p.brand, p.description, p.category_id,
+       p.price_cents, p.currency, p.specs, p.stock_status, p.created_at, p.updated_at,
+       COALESCE(img.key, '')
+FROM products p` + primaryImageJoin + `
+WHERE p.id = $1`
 
 const queryGetProductBySlug = `
-SELECT id, sku, slug, name, brand, description, category_id,
-       price_cents, currency, specs, stock_status, created_at, updated_at
-FROM products
-WHERE slug = $1`
+SELECT p.id, p.sku, p.slug, p.name, p.brand, p.description, p.category_id,
+       p.price_cents, p.currency, p.specs, p.stock_status, p.created_at, p.updated_at,
+       COALESCE(img.key, '')
+FROM products p` + primaryImageJoin + `
+WHERE p.slug = $1`
 
 const queryGetProductsByIDs = `
-SELECT id, sku, slug, name, brand, description, category_id,
-       price_cents, currency, specs, stock_status, created_at, updated_at
-FROM products
-WHERE id = ANY($1)`
+SELECT p.id, p.sku, p.slug, p.name, p.brand, p.description, p.category_id,
+       p.price_cents, p.currency, p.specs, p.stock_status, p.created_at, p.updated_at,
+       COALESCE(img.key, '')
+FROM products p` + primaryImageJoin + `
+WHERE p.id = ANY($1)`
 
 const queryListCategories = `
 SELECT id, slug, label, icon, created_at

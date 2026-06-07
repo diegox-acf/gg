@@ -22,28 +22,59 @@ func (s *Service) ListProducts(ctx context.Context, filter ListProductsFilter) (
 	if filter.PageSize <= 0 {
 		filter.PageSize = 20
 	}
-	return s.repo.ListProducts(ctx, filter)
+	products, next, err := s.repo.ListProducts(ctx, filter)
+	if err != nil {
+		return nil, "", err
+	}
+	s.resolveImageURLs(products)
+	return products, next, nil
 }
 
 func (s *Service) GetProduct(ctx context.Context, id int64) (*Product, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid product id: %d", id)
 	}
-	return s.repo.GetProduct(ctx, id)
+	p, err := s.repo.GetProduct(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	s.resolveImageURLs([]*Product{p})
+	return p, nil
 }
 
 func (s *Service) GetProductBySlug(ctx context.Context, slug string) (*Product, error) {
 	if slug == "" {
 		return nil, fmt.Errorf("slug is required")
 	}
-	return s.repo.GetProductBySlug(ctx, slug)
+	p, err := s.repo.GetProductBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	s.resolveImageURLs([]*Product{p})
+	return p, nil
 }
 
 func (s *Service) GetProductsByIDs(ctx context.Context, ids []int64) ([]*Product, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	return s.repo.GetProductsByIDs(ctx, ids)
+	products, err := s.repo.GetProductsByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	s.resolveImageURLs(products)
+	return products, nil
+}
+
+// resolveImageURLs rewrites each product's raw primary-image key (set by the
+// repository) into a public URL via the image store. Products with no image keep
+// an empty ImageURL.
+func (s *Service) resolveImageURLs(products []*Product) {
+	for _, p := range products {
+		if p != nil && p.ImageURL != "" {
+			p.ImageURL = s.images.PublicURL(p.ImageURL)
+		}
+	}
 }
 
 func (s *Service) ListCategories(ctx context.Context) ([]*Category, error) {

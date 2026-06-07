@@ -2,6 +2,7 @@
         orders-build orders-test \
         inventory-build inventory-test \
         storefront-dev storefront-build \
+        seed-images \
         infra-up infra-down
 
 # --- Catalog (Go) ---
@@ -35,6 +36,18 @@ storefront-dev:
 
 storefront-build:
 	cd gg-storefront && pnpm build
+
+# --- Mock product images ---
+# Copy the committed mock images into the catalog's local image store so it can
+# serve them at /images/<key>. The seed migration references these filenames.
+# (For the containerized catalog, copy into the gg-local/volumes/images mount.)
+
+seed-images:
+	mkdir -p gg-catalog/data/images
+	cp gg-product-images/* gg-catalog/data/images/
+	if [ -f gg-catalog/data/images/powersuplly2.webp ]; then \
+		mv -f gg-catalog/data/images/powersuplly2.webp gg-catalog/data/images/powersupply2.webp; \
+	fi
 
 # --- Infra ---
 
