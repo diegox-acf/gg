@@ -117,3 +117,40 @@ func (r *Repository) ListCategories(ctx context.Context) ([]*catalog.Category, e
 	}
 	return categories, rows.Err()
 }
+
+func (r *Repository) SaveImage(ctx context.Context, img *catalog.ProductImage) (*catalog.ProductImage, error) {
+	out := &catalog.ProductImage{}
+	err := r.pool.QueryRow(ctx, querySaveImage, img.ProductID, img.Key).Scan(
+		&out.ID, &out.ProductID, &out.Key, &out.Position, &out.CreatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("save image: %w", err)
+	}
+	return out, nil
+}
+
+func (r *Repository) ListImages(ctx context.Context, productID int64) ([]*catalog.ProductImage, error) {
+	rows, err := r.pool.Query(ctx, queryListImages, productID)
+	if err != nil {
+		return nil, fmt.Errorf("list images: %w", err)
+	}
+	defer rows.Close()
+
+	var imgs []*catalog.ProductImage
+	for rows.Next() {
+		img := &catalog.ProductImage{}
+		if err := rows.Scan(&img.ID, &img.ProductID, &img.Key, &img.Position, &img.CreatedAt); err != nil {
+			return nil, fmt.Errorf("list images scan: %w", err)
+		}
+		imgs = append(imgs, img)
+	}
+	return imgs, rows.Err()
+}
+
+func (r *Repository) DeleteImage(ctx context.Context, id int64) (string, error) {
+	var key string
+	if err := r.pool.QueryRow(ctx, queryDeleteImage, id).Scan(&key); err != nil {
+		return "", fmt.Errorf("delete image %d: %w", id, err)
+	}
+	return key, nil
+}

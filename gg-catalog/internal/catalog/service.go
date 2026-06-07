@@ -2,15 +2,20 @@ package catalog
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"path"
 )
 
 type Service struct {
-	repo Repository
+	repo   Repository
+	images ImageStore
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository, images ImageStore) *Service {
+	return &Service{repo: repo, images: images}
 }
 
 func (s *Service) ListProducts(ctx context.Context, filter ListProductsFilter) ([]*Product, string, error) {
@@ -43,4 +48,61 @@ func (s *Service) GetProductsByIDs(ctx context.Context, ids []int64) ([]*Product
 
 func (s *Service) ListCategories(ctx context.Context) ([]*Category, error) {
 	return s.repo.ListCategories(ctx)
+}
+
+func (s *Service) UploadImage(ctx context.Context, productID int64, filename string, r io.Reader, size int64, contentType string) (*ProductImage, error) {
+	if productID <= 0 {
+		return nil, fmt.Errorf("invalid product id: %d", productID)
+	}
+	if _, err := s.repo.GetProduct(ctx, productID); err != nil {
+		return nil, fmt.Errorf("product not found: %w", err)
+	}
+
+	ext := path.Ext(filename)
+	key := fmt.Sprintf("%d/%s%s", productID, randomHex(), ext)
+
+	if err := s.images.Put(ctx, key, r, size, contentType); err != nil {
+		return nil, fmt.Errorf("store image: %w", err)
+	}
+
+	img, err := s.repo.SaveImage(ctx, &ProductImage{ProductID: productID, Key: key})
+	if err != nil {
+		_ = s.images.Delete(ctx, key) // best-effort rollback
+		return nil, fmt.Errorf("save image metadata: %w", err)
+	}
+
+	img.URL = s.images.PublicURL(img.Key)
+	return img, nil
+}
+
+func (s *Service) ListImages(ctx context.Context, productID int64) ([]*ProductImage, error) {
+	if productID <= 0 {
+		return nil, fmt.Errorf("invalid product id: %d", productID)
+	}
+	imgs, err := s.repo.ListImages(ctx, productID)
+	if err != nil {
+		return nil, err
+	}
+	for _, img := range imgs {
+		img.URL = s.images.PublicURL(img.Key)
+	}
+	return imgs, nil
+}
+
+func (s *Service) DeleteImage(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return fmt.Errorf("invalid image id: %d", id)
+	}
+	key, err := s.repo.DeleteImage(ctx, id)
+	if err != nil {
+		return fmt.Errorf("delete image: %w", err)
+	}
+	_ = s.images.Delete(ctx, key) // best-effort; metadata is authoritative
+	return nil
+}
+
+func randomHex() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }

@@ -6,7 +6,7 @@
 ## Service role
 
 Read-heavy catalog service. Owns products and categories only — never inventory
-counts, never order state. Any cross-domain data goes over gRPC or Kafka, never
+counts, never order state. Any cross-domain data goes over REST or Kafka, never
 via shared DB.
 
 ## Package layout
@@ -16,34 +16,23 @@ cmd/catalog/       entry point — wiring only, no business logic
 internal/
   catalog/         domain layer: model.go, repository.go (interface), service.go
   config/          env-var config struct (caarlos0/env)
-  grpc/            gRPC server adapter (proto → domain → proto)
   rest/            HTTP adapter (chi router, handlers, middleware)
   postgres/        repository implementation (pgx, raw SQL)
   observability/   OTel init, slog logger
-gen/catalog/v1/    generated protobuf — never hand-edit
-proto/catalog/v1/  source of truth for the gRPC contract
 migrations/        golang-migrate SQL files
 ```
 
 The dependency direction is strict:
-`grpc/` and `rest/` → `catalog/` → `postgres/` adapter via `catalog.Repository` interface.
-Nothing in `catalog/` imports `postgres/`, `grpc/`, or `rest/`.
+`rest/` → `catalog/` → `postgres/` adapter via `catalog.Repository` interface.
+Nothing in `catalog/` imports `postgres/` or `rest/`.
 
 ## Domain layer rules
 
-- `model.go` holds plain Go structs only — no db tags, no proto tags.
+- `model.go` holds plain Go structs only — no db tags.
 - `repository.go` is the port interface. The `postgres` package is the only adapter.
 - `service.go` contains all business rules. Handlers contain none.
 - Input validation (non-zero IDs, non-empty slugs) lives in the service, not in
   the handler.
-
-## gRPC adapter (`internal/grpc/`)
-
-- One `domainToProto` function converts `*catalog.Product` → `*catalogv1.Product`.
-  Keep it in one place — do not duplicate field mapping across methods.
-- Map `pgx.ErrNoRows` → `codes.NotFound`; all other errors → `codes.Internal`.
-- Never log inside the gRPC adapter; structured logging is handled by the OTel
-  interceptor in `interceptors.go`.
 
 ## REST adapter (`internal/rest/`)
 
@@ -108,13 +97,6 @@ Nothing in `catalog/` imports `postgres/`, `grpc/`, or `rest/`.
   via integration tests against a real DB.
 - Use `testify/assert` and `testify/require` — `require` for fatal assertions
   (stops the test on failure), `assert` for non-fatal ones.
-
-## Proto changes
-
-- Edit `proto/catalog/v1/catalog.proto`, then run `make proto` to regenerate `gen/`.
-- Never hand-edit anything under `gen/`.
-- Field numbers are permanent once published — add new fields, never reuse old ones.
-- Run `buf lint` before committing proto changes.
 
 ## What NOT to add here
 

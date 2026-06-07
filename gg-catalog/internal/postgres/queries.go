@@ -31,3 +31,21 @@ const queryListCategories = `
 SELECT id, slug, label, icon, created_at
 FROM categories
 ORDER BY label`
+
+const querySaveImage = `
+INSERT INTO product_images (product_id, key, position)
+VALUES (
+    $1,
+    $2,
+    COALESCE((SELECT MAX(position) + 1 FROM product_images WHERE product_id = $1), 0)
+)
+RETURNING id, product_id, key, position, created_at`
+
+const queryListImages = `
+SELECT id, product_id, key, position, created_at
+FROM product_images
+WHERE product_id = $1
+ORDER BY position, id`
+
+const queryDeleteImage = `
+DELETE FROM product_images WHERE id = $1 RETURNING key`

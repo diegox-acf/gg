@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/diegox-acf/gg-catalog/internal/catalog"
-	grpcserver "github.com/diegox-acf/gg-catalog/internal/grpc"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/diegox-acf/gg-catalog/internal/config"
 	"github.com/diegox-acf/gg-catalog/internal/observability"
 	"github.com/diegox-acf/gg-catalog/internal/postgres"
 	"github.com/diegox-acf/gg-catalog/internal/rest"
-	catalogv1 "github.com/diegox-acf/gg-proto/gen/catalog/v1"
+	localstore "github.com/diegox-acf/gg-catalog/internal/storage/local"
+	s3store "github.com/diegox-acf/gg-catalog/internal/storage/s3"
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"google.golang.org/grpc"
 )
 
 func main() {
@@ -47,7 +47,16 @@ func main() {
 		}
 	}()
 
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	poolCfg, err := pgxpool.ParseConfig(cfg.DatabaseURL)
+	if err != nil {
+		logger.Error("db config parse failed", "err", err)
+		os.Exit(1)
+	}
+	// QueryTracer emits a span per SQL query, auto-parented to the request span.
+	// This is the "→ Postgres" leg of the browser→BFF→Catalog→Postgres trace.
+	poolCfg.ConnConfig.Tracer = otelpgx.NewTracer()
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		logger.Error("db connect failed", "err", err)
 		os.Exit(1)
@@ -59,29 +68,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	images, imageHandler := buildImageStore(cfg, logger)
+
 	repo := postgres.NewRepository(pool)
-	svc := catalog.NewService(repo)
+	svc := catalog.NewService(repo, images)
 
-	// gRPC server
-	grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
-	if err != nil {
-		logger.Error("grpc listen failed", "err", err)
-		os.Exit(1)
-	}
-	grpcSrv := grpc.NewServer(grpcserver.ServerOptions()...)
-	catalogv1.RegisterCatalogServiceServer(grpcSrv, grpcserver.NewCatalogServer(svc))
-
-	go func() {
-		logger.Info("gRPC server started", "port", cfg.GRPCPort)
-		if err := grpcSrv.Serve(grpcListener); err != nil {
-			logger.Error("gRPC server error", "err", err)
-		}
-	}()
-
-	// HTTP server (health + metrics + REST product API)
+	// HTTP server (health + metrics + REST product API + image serving)
 	httpSrv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
-		Handler: rest.NewRouter(logger, svc),
+		Handler: rest.NewRouter(logger, svc, imageHandler),
 	}
 
 	go func() {
@@ -94,8 +89,23 @@ func main() {
 	<-ctx.Done()
 	logger.Info("shutting down")
 
-	grpcSrv.GracefulStop()
 	if err := httpSrv.Shutdown(context.Background()); err != nil {
 		logger.Error("HTTP shutdown error", "err", err)
+	}
+}
+
+func buildImageStore(cfg *config.Config, logger *slog.Logger) (catalog.ImageStore, http.Handler) {
+	switch cfg.ImageStoreType {
+	case "s3":
+		logger.Info("image store: s3 (not yet implemented — uploads will fail)")
+		return s3store.New(cfg.ImageStorePath, "us-east-1", ""), nil
+	default:
+		store, err := localstore.New(cfg.ImageStorePath, cfg.ImageBaseURL)
+		if err != nil {
+			logger.Error("local image store init failed", "err", err)
+			os.Exit(1)
+		}
+		logger.Info("image store: local", "path", cfg.ImageStorePath)
+		return store, store.FileHandler()
 	}
 }

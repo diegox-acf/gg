@@ -1,4 +1,4 @@
-.PHONY: build run test lint migrate-up migrate-down proto docker-build
+.PHONY: build run test lint migrate-up migrate-down docker-build
 
 BIN      := catalog
 CMD      := ./cmd/catalog
@@ -22,9 +22,6 @@ migrate-up:
 
 migrate-down:
 	migrate -path ./migrations -database "$(DATABASE_URL)" down 1
-
-proto:
-	$(MAKE) -C ../gg-proto proto
 
 docker-build:
 	docker buildx build \

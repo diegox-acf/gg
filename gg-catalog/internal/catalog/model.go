@@ -37,6 +37,15 @@ type Product struct {
 	UpdatedAt   time.Time       `json:"updated_at"`
 }
 
+type ProductImage struct {
+	ID        int64     `json:"id"`
+	ProductID int64     `json:"product_id"`
+	Key       string    `json:"key"`
+	URL       string    `json:"url"`
+	Position  int       `json:"position"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type ListProductsFilter struct {
 	CategoryID string
 	PageSize   int32

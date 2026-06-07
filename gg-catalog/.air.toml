@@ -1,7 +1,6 @@
 [build]
-  cmd         = "go build -o ./tmp/catalog ./cmd/catalog"
-  bin         = "./tmp/catalog"
-  full_bin    = "./tmp/catalog"
+  cmd         = "go build -o ./tmp/catalog.exe ./cmd/catalog"
+  entrypoint  = "./tmp/catalog.exe"
   include_ext = ["go", "toml", "sql"]
   exclude_dir = ["gen", "proto", "migrations", "tmp", "vendor"]
   delay       = 500
