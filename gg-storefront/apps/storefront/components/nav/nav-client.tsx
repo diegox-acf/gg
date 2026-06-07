@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { IconBtn } from "./icon-btn";
 import { AppearanceMenu } from "../theme/appearance-menu";
 import { AppearanceControls } from "../theme/appearance-controls";
 import { useCartCount, useCartHydrated } from "@/lib/cart/cart-store";
 import { useUIStore } from "@/lib/ui/ui-store";
+
+interface Account {
+  name: string | null;
+  email: string | null;
+}
 
 const NAV_ITEMS = [
   { label: "GPUs", href: "/category/gpus" },
@@ -17,8 +24,10 @@ const NAV_ITEMS = [
   { label: "Cases", href: "/category/cases" },
 ];
 
-export function NavClient() {
+export function NavClient({ account }: { account: Account | null }) {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const openCart = useUIStore((s) => s.openCart);
   const hydrated = useCartHydrated();
   const count = useCartCount();
@@ -35,21 +44,50 @@ export function NavClient() {
           <AppearanceMenu />
         </div>
 
-        <IconBtn label="Account">
-          <svg
-            width="17"
-            height="17"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {/* Account: dropdown when signed in, else straight to /login */}
+        <div className="relative">
+          <IconBtn
+            label={account ? "Account menu" : "Sign in"}
+            onClick={() =>
+              account ? setAccountOpen((o) => !o) : router.push("/login")
+            }
           >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-        </IconBtn>
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </IconBtn>
+
+          {account && accountOpen && (
+            <div className="absolute right-0 top-[44px] z-[200] w-52 border border-border bg-surface py-1 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+              <div className="truncate border-b border-border px-4 py-2 font-[family-name:var(--font-body)] text-[11px] text-fg-3">
+                {account.name || account.email}
+              </div>
+              <Link
+                href="/account"
+                onClick={() => setAccountOpen(false)}
+                className="block px-4 py-2 font-[family-name:var(--font-body)] text-[13px] text-fg-1 hover:bg-primary-muted hover:text-primary"
+              >
+                Account
+              </Link>
+              <button
+                onClick={() => signOut({ redirectTo: "/" })}
+                className="block w-full px-4 py-2 text-left font-[family-name:var(--font-body)] text-[13px] text-fg-1 hover:bg-primary-muted hover:text-primary"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
         <IconBtn label="Cart" badge={cartCount} onClick={openCart}>
           <svg
             width="17"

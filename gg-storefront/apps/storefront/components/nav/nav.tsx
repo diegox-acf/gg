@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@gg/ui";
+import { auth } from "@/auth";
 import { NavLink } from "./nav-link";
 import { NavClient } from "./nav-client";
 
@@ -11,7 +12,12 @@ const NAV_ITEMS = [
   { label: "Cases", href: "/category/cases" },
 ];
 
-export function Nav() {
+export async function Nav() {
+  const session = await auth();
+  const account = session?.user
+    ? { name: session.user.name ?? null, email: session.user.email ?? null }
+    : null;
+
   return (
     <nav
       className="sticky top-0 z-50 flex h-[60px] items-center border-b border-border px-8"
@@ -33,7 +39,7 @@ export function Nav() {
 
       {/* Right side — Client Component handles cart, account, mobile menu */}
       <div className="relative ml-auto">
-        <NavClient />
+        <NavClient account={account} />
       </div>
     </nav>
   );
