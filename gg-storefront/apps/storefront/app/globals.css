@@ -1,53 +1,27 @@
 @import "tailwindcss";
 
-/* ── Tailwind v4: expose GG design tokens as utility classes ── */
-@theme inline {
-  /* Colors */
-  --color-bg-page:       var(--color-bg-page);
-  --color-bg-surface:    var(--color-bg-surface);
-  --color-bg-elevated:   var(--color-bg-elevated);
-  --color-border:        var(--color-border);
-  --color-border-strong: var(--color-border-strong);
-  --color-primary:       var(--color-primary);
-  --color-primary-hover: var(--color-primary-hover);
-  --color-fg-1:          var(--color-fg-1);
-  --color-fg-2:          var(--color-fg-2);
-  --color-fg-3:          var(--color-fg-3);
-  --color-fg-inverse:    var(--color-fg-inverse);
-  --color-success:       var(--color-success);
-  --color-warning:       var(--color-warning);
-  --color-danger:        var(--color-danger);
-  --color-info:          var(--color-info);
+/* Scan @gg/ui source so Tailwind picks up classes used in shared components */
+@source "../../../packages/ui/src/**/*.{tsx,ts}";
 
-  /* Font families */
-  --font-family-display: var(--font-display);
-  --font-family-sans:    var(--font-body);
-  --font-family-mono:    var(--font-mono);
-}
-
-/* ============================================================
-   GG Gaming — Global Styles & Design Tokens
-   ============================================================ */
-
-/* ── Color tokens ── */
-:root {
+/* ── GG Gaming Design Tokens ── */
+@theme {
   /* Backgrounds */
-  --color-bg-page:     #070a0e;
-  --color-bg-surface:  #0d1117;
-  --color-bg-elevated: #141b24;
-  --color-bg-overlay:  rgba(7, 10, 14, 0.80);
-
-  /* Borders */
-  --color-border:        #1e2938;
-  --color-border-strong: #2e3d50;
-  --color-border-accent: rgba(255, 53, 0, 0.40);
+  --color-page:     #070a0e;
+  --color-surface:  #0d1117;
+  --color-elevated: #141b24;
+  --color-overlay:  rgba(7, 10, 14, 0.80);
 
   /* Brand / Primary */
   --color-primary:       #ff3500;
   --color-primary-hover: #e02d00;
   --color-primary-muted: rgba(255, 53, 0, 0.15);
 
-  /* Text */
+  /* Borders */
+  --color-border:        #1e2938;
+  --color-border-strong: #2e3d50;
+  --color-border-accent: rgba(255, 53, 0, 0.40);
+
+  /* Foreground / Text */
   --color-fg-1:       #f0f4f8;
   --color-fg-2:       #8a9bb0;
   --color-fg-3:       #4a5a6a;
@@ -62,183 +36,208 @@
   --color-danger-muted:  rgba(239, 68, 68, 0.12);
   --color-info:          #38bdf8;
   --color-info-muted:    rgba(56, 189, 248, 0.12);
+
+  /* Typography */
+  --font-display: var(--font-orbitron), sans-serif;
+  --font-body:    var(--font-roboto), system-ui, sans-serif;
+  --font-mono:    var(--font-roboto-mono), "Courier New", monospace;
+
+  /* Shadows */
+  --shadow-accent: 0 4px 20px rgba(255, 53, 0, 0.25);
+  --shadow-card:   0 8px 32px rgba(0, 0, 0, 0.60);
 }
 
-/* ── Semantic aliases ── */
+/* ── Semantic aliases (used in arbitrary values, not as Tailwind utilities) ── */
 :root {
-  --bg:       var(--color-bg-page);
-  --surface:  var(--color-bg-surface);
-  --surface-2: var(--color-bg-elevated);
-  --overlay:  var(--color-bg-overlay);
-
+  --bg:           var(--color-page);
+  --surface:      var(--color-surface);
+  --surface-2:    var(--color-elevated);
   --border:       var(--color-border);
   --border-focus: var(--color-primary);
-
-  --text:        var(--color-fg-1);
-  --text-muted:  var(--color-fg-2);
-  --text-subtle: var(--color-fg-3);
-
+  --text:         var(--color-fg-1);
+  --text-muted:   var(--color-fg-2);
+  --text-subtle:  var(--color-fg-3);
   --accent:       var(--color-primary);
   --accent-hover: var(--color-primary-hover);
   --accent-bg:    var(--color-primary-muted);
 
-  /* ── shadcn/ui CSS variable aliases ── */
-  --background:             var(--color-bg-page);
-  --foreground:             var(--color-fg-1);
-  --card:                   var(--color-bg-surface);
-  --card-foreground:        var(--color-fg-1);
-  --popover:                var(--color-bg-elevated);
-  --popover-foreground:     var(--color-fg-1);
-  --primary:                var(--color-primary);
-  --primary-foreground:     var(--color-fg-inverse);
-  --secondary:              var(--color-bg-elevated);
-  --secondary-foreground:   var(--color-fg-1);
-  --muted:                  var(--color-bg-surface);
-  --muted-foreground:       var(--color-fg-2);
-  --accent-foreground:      var(--color-fg-1);
-  --destructive:            var(--color-danger);
-  --destructive-foreground: var(--color-fg-1);
-  --input:                  var(--color-border);
-  --ring:                   var(--color-primary);
-  --radius:                 var(--radius-md);
+  /* Background texture — grid lines tinted by the active accent (reacts to theming) */
+  --grid-line: color-mix(in srgb, var(--color-primary) 4%, transparent);
+  --success:      var(--color-success);
+  --success-bg:   var(--color-success-muted);
+  --warning:      var(--color-warning);
+  --warning-bg:   var(--color-warning-muted);
+  --danger:       var(--color-danger);
+  --danger-bg:    var(--color-danger-muted);
+  --fg-inverse:   var(--color-fg-inverse);
 }
 
-/* ── UI component aliases (semantic shortcuts used by GG components) ── */
-:root {
-  --primary-subtle: var(--color-primary-muted);
-  --primary-glow:   rgba(255, 53, 0, 0.35);
-  --border-bright:  var(--color-border-strong);
-  --fg-inverse:     var(--color-fg-inverse);
-  --success:        var(--color-success);
-  --success-bg:     var(--color-success-muted);
-  --warning:        var(--color-warning);
-  --warning-bg:     var(--color-warning-muted);
-  --danger:         var(--color-danger);
-  --danger-bg:      var(--color-danger-muted);
-}
+/*
+ * ── Light theme overrides ──
+ * Tailwind v4 emits the @theme tokens as real CSS variables that utilities
+ * reference via var(), so re-declaring --color-* here re-colors every
+ * bg-surface / text-fg-1 / border-border utility at runtime. data-theme is set
+ * on <html> by the blocking script in layout.tsx (dark is the default).
+ * Note: --color-primary* and --color-fg-inverse are intentionally NOT overridden
+ * so the brand accent and on-primary text stay constant across themes.
+ */
+:root[data-theme="light"] {
+  --color-page:     #eaeae5;
+  --color-surface:  #f3f3ee;
+  --color-elevated: #fafaf8;
+  --color-overlay:  rgba(234, 234, 229, 0.80);
 
-/* ── Typography ── */
-:root {
-  --font-display: var(--font-orbitron), sans-serif;
-  --font-heading: var(--font-orbitron), sans-serif;
-  --font-body:    var(--font-roboto), system-ui, sans-serif;
-  --font-mono:    var(--font-roboto-mono), "Courier New", monospace;
-}
+  --color-border:        #c8c8c0;
+  --color-border-strong: #a0a09a;
 
-/* ── Type scale ── */
-:root {
-  --text-xs:   0.75rem;   /* 12px */
-  --text-sm:   0.875rem;  /* 14px */
-  --text-base: 1rem;      /* 16px */
-  --text-md:   1.125rem;  /* 18px */
-  --text-lg:   1.5rem;    /* 24px */
-  --text-xl:   2rem;      /* 32px */
-  --text-2xl:  2.5rem;    /* 40px */
-  --text-3xl:  3.5rem;    /* 56px */
-  --text-4xl:  4.5rem;    /* 72px */
-  --text-5xl:  6rem;      /* 96px */
-  --text-hero: 7.5rem;    /* 120px */
-}
+  --color-fg-1: #0a0a08;
+  --color-fg-2: #555550;
+  --color-fg-3: #9a9a94;
 
-/* ── Spacing ── */
-:root {
-  --space-1:  4px;
-  --space-2:  8px;
-  --space-3:  12px;
-  --space-4:  16px;
-  --space-6:  24px;
-  --space-8:  32px;
-  --space-12: 48px;
-  --space-16: 64px;
-  --space-24: 96px;
-  --space-32: 128px;
-}
+  --shadow-card: 0 8px 32px rgba(10, 10, 8, 0.12);
 
-/* ── Border radius ── */
-:root {
-  --radius-sm:   4px;
-  --radius-md:   6px;
-  --radius-lg:   8px;
-  --radius-xl:   12px;
-  --radius-full: 9999px;
-}
+  /* Neutral grid on the light paper background (accent is too faint to read here) */
+  --grid-line: color-mix(in srgb, #0a0a08 5%, transparent);
 
-/* ── Shadows ── */
-:root {
-  --shadow-0: none;
-  --shadow-1: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.6);
-  --shadow-3: 0 16px 64px rgba(0, 0, 0, 0.8);
-  --shadow-accent: 0 4px 20px rgba(255, 53, 0, 0.25);
-}
-
-/* ── Motion ── */
-:root {
-  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in:    cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-inout: cubic-bezier(0.85, 0, 0.15, 1);
-
-  --duration-fast:  80ms;
-  --duration-base:  150ms;
-  --duration-slow:  250ms;
-  --duration-enter: 350ms;
+  color-scheme: light;
 }
 
 /* ── Base resets ── */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 html {
   background: var(--bg);
-  color: var(--text);
+  color: var(--color-fg-1);
   font-family: var(--font-body);
-  font-size: 16px;
+  color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ── Background texture ── */
 body {
-  min-height: 100vh;
-  overflow-x: hidden;
+  position: relative;
+  background-color: var(--bg);
+  /* Fixed blueprint grid — subtle, accent-tinted via --grid-line */
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-attachment: fixed;
 }
 
-a {
-  color: var(--text);
-  text-decoration: none;
-  transition: color var(--duration-base) var(--ease-out);
+/* CRT scanline overlay — dark theme only, non-interactive, above everything */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 3px,
+    rgba(0, 0, 0, 0.02) 3px,
+    rgba(0, 0, 0, 0.02) 4px
+  );
+}
+:root[data-theme="light"] body::after {
+  display: none;
 }
 
-a:hover {
-  color: var(--accent);
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+/* ── clip-path utilities ── */
+@utility clip-cyber {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+@utility clip-cyber-sm {
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+}
+@utility clip-cyber-xs {
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+@utility clip-cyber-btn {
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+}
+@utility clip-cyber-badge {
+  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
+}
+@utility clip-cyber-input {
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+}
+@utility clip-logo-block {
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+@utility clip-logo-nav {
+  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 5px 100%, 0 calc(100% - 5px));
 }
 
-/* ── Cyborg clip-path utilities ── */
-.clip-cyber    { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px)); }
-.clip-cyber-sm { clip-path: polygon(0 0, calc(100% - 8px) 0,  100% 8px,  100% 100%, 8px 100%,  0 calc(100% - 8px)); }
-.clip-cyber-xs { clip-path: polygon(0 0, calc(100% - 5px) 0,  100% 5px,  100% 100%, 5px 100%,  0 calc(100% - 5px)); }
-.clip-cyber-btn{ clip-path: polygon(0 0, calc(100% - 9px) 0,  100% 9px,  100% 100%, 9px 100%,  0 calc(100% - 9px)); }
-.clip-cyber-tr { clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
-.clip-cyber-tr-sm { clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); }
+/* ── Keyframe animations ── */
+@keyframes lowStockPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.40; }
+}
 
-/* ── Keyframes ── */
+@keyframes scanSweep {
+  0%   { top: -80px; opacity: 0; }
+  20%  { opacity: 0.9; }
+  80%  { opacity: 0.9; }
+  100% { top: 120%; opacity: 0; }
+}
+
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 @keyframes heroScan {
-  0%, 100% { top: -4px; opacity: 0; }
-  10%       { opacity: 0.35; }
-  90%       { opacity: 0.35; }
-  95%       { top: 100%; opacity: 0; }
+  0%   { top: -2px; opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
 }
 
-@keyframes lowStockPulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.35; }
+@keyframes heroGlitch {
+  0%, 100% { transform: translate(0, 0); }
+  20%      { transform: translate(-3px, 0); }
+  40%      { transform: translate(3px, 0); filter: brightness(1.15); }
+  60%      { transform: translate(-1px, 0); }
+  80%      { transform: translate(1px, 0); filter: brightness(1); }
 }
 
-.animate-fade-in-up { animation: fadeInUp 400ms var(--ease-out) both; }
+/* Hero headline glitch on hover */
+.hero-glitch:hover {
+  animation: heroGlitch 0.28s steps(4) forwards;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-glitch:hover { animation: none; }
+}

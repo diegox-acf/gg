@@ -1,54 +1,70 @@
-// Pattern: Container / Presenter — Server Component fetches and passes data down.
-import { notFound } from 'next/navigation'
-import { Breadcrumb } from '@/components/catalog/Breadcrumb'
-import { ProductCard } from '@/components/catalog/ProductCard'
-import { SectionLabel } from '@/components/ui/SectionLabel'
-import { getCategoriesSafe, getProductsSafe } from '@/lib/catalog-client'
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { ChevronRight } from "lucide-react";
+import { Nav } from "@/components/nav/nav";
+import { CategoryProducts } from "@/components/category/category-products";
+import { getCategoryBySlug, getProducts } from "@/lib/catalog/data";
 
-interface Props {
-  params: Promise<{ slug: string }>
+// Per-request rendering against live Catalog data.
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const category = await getCategoryBySlug(slug);
+  if (!category) return { title: "Category not found — GG Gaming" };
+  return {
+    title: `${category.name} — GG Gaming`,
+    description: category.description,
+  };
 }
 
-export async function generateStaticParams() {
-  const categories = await getCategoriesSafe()
-  return categories.map((c) => ({ slug: c.id }))
-}
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
 
-export default async function CategoryPage({ params }: Props) {
-  const { slug } = await params
-  const [{ products }, categories] = await Promise.all([
-    getProductsSafe({ categoryId: slug, pageSize: 48 }),
-    getCategoriesSafe(),
-  ])
+  // Container: owns data fetching; presenter (CategoryProducts) owns view state.
+  const category = await getCategoryBySlug(slug);
+  if (!category) notFound();
 
-  const category = categories.find((c) => c.id === slug)
-  if (!category) notFound()
+  const products = await getProducts({ categorySlug: category.slug });
 
   return (
-    <main className="max-w-[1200px] mx-auto px-4 sm:px-8 lg:px-12 py-10">
-      <Breadcrumb
-        items={[
-          { label: 'Home', href: '/' },
-          { label: category.label },
-        ]}
-      />
+    <>
+      <Nav />
 
-      <div className="flex items-center gap-3 mb-8">
-        <span className="text-[28px]">{category.icon}</span>
-        <SectionLabel>{category.label}</SectionLabel>
-      </div>
+      <main className="mx-auto max-w-[1440px] px-4 py-10 sm:px-8 lg:px-12">
+        {/* Breadcrumb */}
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-6 flex items-center gap-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.08em] text-fg-3"
+        >
+          <Link href="/" className="transition-colors hover:text-fg-1">
+            Home
+          </Link>
+          <ChevronRight size={12} aria-hidden="true" />
+          <span className="text-fg-1">{category.name}</span>
+        </nav>
 
-      {products.length === 0 ? (
-        <p className="font-sans text-[14px] text-fg-3 py-16 text-center">
-          No products in this category yet.
-        </p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      )}
-    </main>
-  )
+        {/* Header */}
+        <header className="mb-10">
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-black uppercase tracking-[-0.01em] text-fg-1 sm:text-[34px]">
+            {category.name}
+          </h1>
+          <p className="mt-2 max-w-[60ch] font-[family-name:var(--font-body)] text-[13px] leading-[1.6] text-fg-2">
+            {category.description}
+          </p>
+        </header>
+
+        <CategoryProducts products={products} />
+      </main>
+    </>
+  );
 }

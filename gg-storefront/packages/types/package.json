@@ -2,10 +2,8 @@
   "name": "@gg/types",
   "version": "0.0.0",
   "private": true,
-  "exports": {
-    "./*": "./gen/*"
-  },
   "scripts": {
+    "build": "tsc --noEmit",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {

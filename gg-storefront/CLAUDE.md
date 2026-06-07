@@ -40,7 +40,7 @@ packages/typescript-config/
 ## App Router conventions
 - Server Components by default — add `'use client'` only when needed (hooks, events, browser APIs)
 - Data fetching lives in Server Components or Server Actions; never in Client Components
-- Route handlers (`app/api/`) act as the BFF layer for external gRPC calls
+- Route handlers (`app/api/`) act as the BFF layer for external REST calls
 - All mutations go through Server Actions (`lib/actions/`)
 
 ## React design patterns
@@ -81,6 +81,6 @@ Every page and component must work on mobile (320px) through desktop (1440px).
 - `cn()` utility comes from `@gg/ui`, not a local file
 
 ## Current build status (Phase 0 / early Phase 1)
-- Mock data in `lib/mock-data.ts` — replace with ConnectRPC calls in Phase 1
+- Mock data in `lib/mock-data.ts` — replace with REST API calls in Phase 1
 - Cart is client-side Zustand only — Redis persistence added in Phase 2
 - Auth not yet wired — checkout redirects are placeholders

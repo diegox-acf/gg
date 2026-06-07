@@ -1,94 +1,153 @@
-// Field names match the catalog REST API schema.
-export type StockStatus = 'in-stock' | 'low-stock' | 'out-of-stock'
+export type StockStatus = "in-stock" | "low-stock" | "out-of-stock";
 
-export interface Product {
-  id: number
-  brand: string
-  name: string
-  slug: string
-  category_id: string
-  price_cents: number
-  currency: string
-  stock_status: StockStatus
-  specs: Record<string, string>
-  sku: string
-  description: string
+export interface MockProduct {
+  id: string;
+  sku: string;
+  slug: string;
+  name: string;
+  brand: string;
+  description: string;
+  categorySlug: string;
+  priceCents: number;
+  stockStatus: StockStatus;
+  specs?: Record<string, string>;
 }
 
-export interface Category {
-  id: string
-  label: string
-  icon: string
+export interface MockCategory {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  productCount: number;
+  icon: string;
 }
 
-export const PRODUCTS: Product[] = [
-  {
-    id: 1, brand: 'ASUS ROG', name: 'GeForce RTX 4080 Super 16G',
-    slug: 'asus-rog-rtx-4080-super-16g', category_id: 'gpus',
-    price_cents: 84999, currency: 'USD', stock_status: 'in-stock', description: '',
-    specs: { VRAM: '16 GB GDDR6X', TDP: '320W', 'Boost Clock': '2535 MHz', Outputs: '3× DP, 1× HDMI' },
-    sku: 'NV-RTX4080S-16G',
-  },
-  {
-    id: 2, brand: 'MSI', name: 'GeForce RTX 4090 Gaming X Trio 24G',
-    slug: 'msi-rtx-4090-gaming-x-trio-24g', category_id: 'gpus',
-    price_cents: 159999, currency: 'USD', stock_status: 'low-stock', description: '',
-    specs: { VRAM: '24 GB GDDR6X', TDP: '450W', 'Boost Clock': '2610 MHz', Outputs: '3× DP, 1× HDMI' },
-    sku: 'NV-RTX4090-24G',
-  },
-  {
-    id: 3, brand: 'Gigabyte', name: 'RX 7900 XTX Gaming OC 24G',
-    slug: 'gigabyte-rx-7900-xtx-gaming-oc-24g', category_id: 'gpus',
-    price_cents: 94999, currency: 'USD', stock_status: 'out-of-stock', description: '',
-    specs: { VRAM: '24 GB GDDR6', TDP: '355W', 'Boost Clock': '2615 MHz', Outputs: '2× DP, 2× HDMI' },
-    sku: 'AMD-RX7900XTX-24G',
-  },
-  {
-    id: 4, brand: 'Intel', name: 'Core i9-14900K',
-    slug: 'intel-core-i9-14900k', category_id: 'cpus',
-    price_cents: 41999, currency: 'USD', stock_status: 'in-stock', description: '',
-    specs: { Cores: '24 (8P+16E)', 'Boost Clock': '6.0 GHz', TDP: '125W', Socket: 'LGA1700' },
-    sku: 'INT-i9-14900K',
-  },
-  {
-    id: 5, brand: 'AMD', name: 'Ryzen 9 7950X',
-    slug: 'amd-ryzen-9-7950x', category_id: 'cpus',
-    price_cents: 54999, currency: 'USD', stock_status: 'in-stock', description: '',
-    specs: { Cores: '16', 'Boost Clock': '5.7 GHz', TDP: '170W', Socket: 'AM5' },
-    sku: 'AMD-R9-7950X',
-  },
-  {
-    id: 6, brand: 'Corsair', name: 'K100 RGB Mechanical Keyboard',
-    slug: 'corsair-k100-rgb-keyboard', category_id: 'peripherals',
-    price_cents: 22999, currency: 'USD', stock_status: 'in-stock', description: '',
-    specs: { Switch: 'Cherry MX Speed Silver', Layout: 'Full (100%)', Connectivity: 'USB-C', Backlight: 'Per-key RGB' },
-    sku: 'COR-K100-RGB',
-  },
-  {
-    id: 7, brand: 'Logitech G', name: 'G Pro X Superlight 2',
-    slug: 'logitech-g-pro-x-superlight-2', category_id: 'peripherals',
-    price_cents: 15999, currency: 'USD', stock_status: 'in-stock', description: '',
-    specs: { Sensor: 'HERO 25K', DPI: '25,600', Weight: '60g', Connectivity: '2.4 GHz Wireless' },
-    sku: 'LOG-GPXSL2',
-  },
-  {
-    id: 8, brand: 'Samsung', name: '990 Pro NVMe SSD 2TB',
-    slug: 'samsung-990-pro-nvme-ssd-2tb', category_id: 'storage',
-    price_cents: 17999, currency: 'USD', stock_status: 'in-stock', description: '',
-    specs: { Capacity: '2 TB', Interface: 'PCIe 4.0 ×4', 'Seq Read': '7,450 MB/s', 'Seq Write': '6,900 MB/s' },
-    sku: 'SAM-990PRO-2TB',
-  },
-]
+export function formatPrice(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(cents / 100);
+}
 
-export const CATEGORIES: Category[] = [
-  { id: 'gpus',         label: 'GPUs',         icon: '▣' },
-  { id: 'cpus',         label: 'CPUs',         icon: '◈' },
-  { id: 'motherboards', label: 'Motherboards', icon: '⊞' },
-  { id: 'memory',       label: 'Memory',       icon: '▤' },
-  { id: 'storage',      label: 'Storage',      icon: '◫' },
-  { id: 'peripherals',  label: 'Peripherals',  icon: '◎' },
-  { id: 'cases',        label: 'Cases',        icon: '□' },
-  { id: 'cooling',      label: 'Cooling',      icon: '◌' },
-]
+export const MOCK_CATEGORIES: MockCategory[] = [
+  { id: "1", slug: "gpus", name: "GPUs", description: "Graphics cards for gaming and creation", productCount: 24, icon: "▣" },
+  { id: "2", slug: "cpus", name: "CPUs", description: "Processors from AMD and Intel", productCount: 18, icon: "◈" },
+  { id: "3", slug: "motherboards", name: "Motherboards", description: "Boards for every platform", productCount: 22, icon: "⊞" },
+  { id: "4", slug: "memory", name: "Memory", description: "DDR5 and DDR4 RAM kits", productCount: 16, icon: "▤" },
+  { id: "5", slug: "storage", name: "Storage", description: "SSDs and NVMe drives", productCount: 14, icon: "◫" },
+  { id: "6", slug: "peripherals", name: "Peripherals", description: "Keyboards, mice, and headsets", productCount: 31, icon: "◎" },
+  { id: "7", slug: "cases", name: "Cases", description: "ATX, mATX, and ITX enclosures", productCount: 12, icon: "□" },
+  { id: "8", slug: "cooling", name: "Cooling", description: "Air and liquid cooling solutions", productCount: 19, icon: "◌" },
+];
 
-export const FEATURED_PRODUCTS = PRODUCTS.slice(0, 8)
+export function getCategoryBySlug(slug: string): MockCategory | undefined {
+  return MOCK_CATEGORIES.find((c) => c.slug === slug);
+}
+
+export function getProductsByCategory(categorySlug: string): MockProduct[] {
+  return MOCK_PRODUCTS.filter((p) => p.categorySlug === categorySlug);
+}
+
+export function getProductBySlug(slug: string): MockProduct | undefined {
+  return MOCK_PRODUCTS.find((p) => p.slug === slug);
+}
+
+export function getRelatedProducts(
+  product: MockProduct,
+  limit = 4,
+): MockProduct[] {
+  return MOCK_PRODUCTS.filter(
+    (p) => p.categorySlug === product.categorySlug && p.id !== product.id,
+  ).slice(0, limit);
+}
+
+export const MOCK_PRODUCTS: MockProduct[] = [
+  {
+    id: "1",
+    sku: "NV-RTX4090-24G",
+    slug: "asus-rog-strix-rtx-4090-24g",
+    name: "GeForce RTX 4090 ROG Strix OC 24GB",
+    brand: "ASUS ROG",
+    description: "The ultimate GPU for 4K gaming and content creation.",
+    categorySlug: "gpus",
+    priceCents: 159999,
+    stockStatus: "in-stock",
+  },
+  {
+    id: "2",
+    sku: "NV-RTX4080S-16G",
+    slug: "msi-rtx-4080-super-16g",
+    name: "GeForce RTX 4080 Super Gaming X Trio 16GB",
+    brand: "MSI",
+    description: "High-performance 1440p and 4K gaming card.",
+    categorySlug: "gpus",
+    priceCents: 99999,
+    stockStatus: "in-stock",
+  },
+  {
+    id: "3",
+    sku: "AMD-RX7900XTX-24G",
+    slug: "gigabyte-rx-7900-xtx-gaming-oc",
+    name: "RX 7900 XTX Gaming OC 24GB",
+    brand: "Gigabyte",
+    description: "AMD's flagship Radeon card for maxed-out gaming.",
+    categorySlug: "gpus",
+    priceCents: 94999,
+    stockStatus: "out-of-stock",
+  },
+  {
+    id: "4",
+    sku: "AMD-R9-7950X3D",
+    slug: "amd-ryzen-9-7950x3d",
+    name: "Ryzen 9 7950X3D 16-Core",
+    brand: "AMD",
+    description: "World's fastest gaming CPU with 3D V-Cache technology.",
+    categorySlug: "cpus",
+    priceCents: 69999,
+    stockStatus: "low-stock",
+  },
+  {
+    id: "5",
+    sku: "INTEL-I9-14900KS",
+    slug: "intel-core-i9-14900ks",
+    name: "Core i9-14900KS 24-Core",
+    brand: "Intel",
+    description: "Intel's highest-clocked desktop processor.",
+    categorySlug: "cpus",
+    priceCents: 58999,
+    stockStatus: "in-stock",
+  },
+  {
+    id: "6",
+    sku: "CORSAIR-K100-AIR",
+    slug: "corsair-k100-air-wireless",
+    name: "K100 Air Wireless Mechanical Keyboard",
+    brand: "Corsair",
+    description: "Ultra-thin wireless mechanical keyboard for serious gamers.",
+    categorySlug: "peripherals",
+    priceCents: 22999,
+    stockStatus: "in-stock",
+  },
+  {
+    id: "7",
+    sku: "SAMSUNG-990PRO-2T",
+    slug: "samsung-990-pro-2tb",
+    name: "990 Pro NVMe SSD 2TB",
+    brand: "Samsung",
+    description: "PCIe 4.0 NVMe with up to 7,450 MB/s sequential read.",
+    categorySlug: "storage",
+    priceCents: 14999,
+    stockStatus: "in-stock",
+  },
+  {
+    id: "8",
+    sku: "CORSAIR-DDR5-32GB",
+    slug: "corsair-dominator-titanium-ddr5-32gb",
+    name: "Dominator Titanium DDR5-6000 32GB",
+    brand: "Corsair",
+    description: "High-performance DDR5 memory with aluminum DHX fins.",
+    categorySlug: "memory",
+    priceCents: 18999,
+    stockStatus: "low-stock",
+  },
+];

@@ -1,23 +1,24 @@
 {
   "name": "storefront",
-  "version": "0.1.0",
-  "type": "module",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint --max-warnings 0",
-    "check-types": "next typegen && tsc --noEmit"
+    "lint": "next lint",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@gg/types": "workspace:*",
     "@gg/ui": "workspace:*",
-    "lucide-react": "^1.11.0",
-    "next": "16.2.0",
+    "@opentelemetry/api": "^1.9.1",
+    "@vercel/otel": "^2.1.2",
+    "lucide-react": "^0.511.0",
+    "next": "^16.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@gg/eslint-config": "workspace:*",
@@ -26,8 +27,6 @@
     "@types/node": "^22.15.3",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
-    "eslint": "^9.39.1",
-    "postcss": "^8.5.10",
     "tailwindcss": "^4.2.4",
     "typescript": "5.9.2"
   }

@@ -4,6 +4,6 @@
     "outDir": "dist",
     "strictNullChecks": true
   },
-  "include": ["gen/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

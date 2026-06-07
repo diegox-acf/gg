@@ -1,0 +1,102 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Menu, X } from "lucide-react";
+import { IconBtn } from "./icon-btn";
+import { AppearanceMenu } from "../theme/appearance-menu";
+import { AppearanceControls } from "../theme/appearance-controls";
+import { useCartCount, useCartHydrated } from "@/lib/cart/cart-store";
+import { useUIStore } from "@/lib/ui/ui-store";
+
+const NAV_ITEMS = [
+  { label: "GPUs", href: "/category/gpus" },
+  { label: "CPUs", href: "/category/cpus" },
+  { label: "Peripherals", href: "/category/peripherals" },
+  { label: "Storage", href: "/category/storage" },
+  { label: "Cases", href: "/category/cases" },
+];
+
+export function NavClient() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const openCart = useUIStore((s) => s.openCart);
+  const hydrated = useCartHydrated();
+  const count = useCartCount();
+  // Gate on hydration: server + first client render show 0 to avoid a mismatch.
+  const cartCount = hydrated ? count : 0;
+
+  return (
+    <>
+      {/* Right-side icon buttons */}
+      <div className="flex items-center gap-1">
+        {/* Appearance (theme + accent) — hidden on the smallest screens; the
+            mobile menu exposes the same controls inline below. */}
+        <div className="hidden sm:block">
+          <AppearanceMenu />
+        </div>
+
+        <IconBtn label="Account">
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </IconBtn>
+        <IconBtn label="Cart" badge={cartCount} onClick={openCart}>
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+        </IconBtn>
+
+        {/* Hamburger — visible only on mobile */}
+        <button
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          onClick={() => setMenuOpen((o) => !o)}
+          className="flex items-center p-2 text-fg-1 transition-colors duration-150 hover:text-primary md:hidden"
+        >
+          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div className="absolute left-0 right-0 top-[60px] z-[200] animate-[slideDown_200ms_ease_both] border-b border-border bg-surface px-8 py-4 md:hidden">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMenuOpen(false)}
+              className="block border-b border-border py-[10px] font-[family-name:var(--font-body)] text-[14px] font-medium uppercase tracking-[0.06em] text-fg-1 last:border-b-0 hover:text-primary"
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          {/* Appearance controls for mobile (popover trigger is hidden below sm) */}
+          <div className="pt-4 sm:hidden">
+            <AppearanceControls />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

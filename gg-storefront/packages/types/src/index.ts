@@ -1,7 +1,8 @@
-// Generated Protobuf TypeScript types will be added here in Phase 1
-// when the gg-proto code generation pipeline is wired up.
+// Shared domain types for the storefront BFF and UI.
 //
-// Packages:
-//   - catalog/v1  → Product, Category, ListProductsRequest/Response
-//   - orders/v1   → Order, CreateOrderRequest/Response
-//   - inventory/v1 → Stock, ReserveRequest/Response
+// Phase 1: hand-written TypeScript interfaces that mirror the Catalog REST
+// API (JSON over HTTP). gRPC/Protobuf code generation was removed — see
+// ADR-016 in gg-docs/06-decision-log.md. Add Product, Category, Order, and
+// Stock shapes here as the BFF route handlers come online.
+
+export {};
