@@ -18,7 +18,7 @@ export function NavLink({ href, children, exact = false }: NavLinkProps) {
     <Link
       href={href}
       className={cn(
-        "group relative flex flex-col pb-px",
+        "group relative flex shrink-0 flex-col whitespace-nowrap pb-px",
         "font-[family-name:var(--font-body)] text-[12px] font-medium uppercase tracking-[0.1em]",
         "transition-colors duration-150",
         isActive ? "text-primary" : "text-fg-2 hover:text-primary",

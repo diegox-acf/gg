@@ -3,14 +3,7 @@ import { Logo } from "@gg/ui";
 import { auth } from "@/auth";
 import { NavLink } from "./nav-link";
 import { NavClient } from "./nav-client";
-
-const NAV_ITEMS = [
-  { label: "GPUs", href: "/category/gpus" },
-  { label: "CPUs", href: "/category/cpus" },
-  { label: "Peripherals", href: "/category/peripherals" },
-  { label: "Storage", href: "/category/storage" },
-  { label: "Cases", href: "/category/cases" },
-];
+import { NAV_ITEMS } from "./nav-items";
 
 export async function Nav() {
   const session = await auth();
@@ -28,8 +21,8 @@ export async function Nav() {
         <Logo size="nav" />
       </Link>
 
-      {/* Desktop nav links — centered */}
-      <div className="hidden flex-1 items-center justify-center gap-8 md:flex">
+      {/* Desktop nav links — 14 categories overflow, so the bar scrolls (mega-menu TBD) */}
+      <div className="mx-6 hidden flex-1 items-center gap-5 overflow-x-auto md:flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {NAV_ITEMS.map((item) => (
           <NavLink key={item.href} href={item.href}>
             {item.label}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { IconBtn } from "./icon-btn";
+import { NAV_ITEMS } from "./nav-items";
 import { AppearanceMenu } from "../theme/appearance-menu";
 import { AppearanceControls } from "../theme/appearance-controls";
 import { useCart } from "@/components/cart/cart-provider";
@@ -15,14 +16,6 @@ interface Account {
   name: string | null;
   email: string | null;
 }
-
-const NAV_ITEMS = [
-  { label: "GPUs", href: "/category/gpus" },
-  { label: "CPUs", href: "/category/cpus" },
-  { label: "Peripherals", href: "/category/peripherals" },
-  { label: "Storage", href: "/category/storage" },
-  { label: "Cases", href: "/category/cases" },
-];
 
 export function NavClient({ account }: { account: Account | null }) {
   const router = useRouter();
@@ -116,7 +109,7 @@ export function NavClient({ account }: { account: Account | null }) {
 
       {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div className="absolute left-0 right-0 top-[60px] z-[200] animate-[slideDown_200ms_ease_both] border-b border-border bg-surface px-8 py-4 md:hidden">
+        <div className="absolute left-0 right-0 top-[60px] z-[200] max-h-[calc(100vh-60px)] animate-[slideDown_200ms_ease_both] overflow-y-auto border-b border-border bg-surface px-8 py-4 md:hidden">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}

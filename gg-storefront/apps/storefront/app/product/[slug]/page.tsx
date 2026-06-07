@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ChevronRight, Package } from "lucide-react";
@@ -98,8 +99,21 @@ export default async function ProductPage({
               aria-hidden="true"
               className="absolute bottom-0 right-0 size-6 border-b-2 border-r-2 border-primary"
             />
-            {/* Phase 1: replace with next/image from the Catalog image service */}
-            <Package size={96} className="text-border-strong" />
+            {product.imageUrl ? (
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-contain p-8"
+                priority
+                // Catalog serves these on localhost; Next 16's optimizer blocks
+                // loopback IPs (SSRF guard), so load them directly.
+                unoptimized
+              />
+            ) : (
+              <Package size={96} className="text-border-strong" />
+            )}
           </div>
 
           {/* Info panel */}

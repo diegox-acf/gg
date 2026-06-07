@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Package } from "lucide-react";
 import { cn } from "@gg/ui";
 import { Badge } from "@gg/ui";
@@ -97,8 +98,20 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.sku}
         </span>
 
-        {/* Phase 0: placeholder icon; Phase 1: replace with next/image */}
-        <Package size={40} className="text-border-strong" />
+        {product.imageUrl ? (
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 50vw, 25vw"
+            className="object-contain p-2"
+            // Catalog serves these on localhost; Next 16's optimizer blocks loopback
+            // IPs (SSRF guard), so load them directly.
+            unoptimized
+          />
+        ) : (
+          <Package size={40} className="text-border-strong" />
+        )}
       </div>
 
       {/* Card body */}
