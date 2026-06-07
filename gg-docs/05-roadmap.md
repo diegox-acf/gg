@@ -9,7 +9,7 @@
 - `gg-storefront/` Next.js 15 monorepo scaffolded: design system implemented, all pages built
 
 ### Phase 1 — in progress
-- `gg-catalog/` Go service: fully scaffolded (REST + gRPC, pgx, OTel, migrations + seed data, ADR-012 locked)
+- `gg-catalog/` Go service: fully scaffolded (REST, pgx, OTel, migrations + seed data, ADR-012 locked)
 - Storefront wired to catalog API via `catalog-client.ts` with mock-data fallback
 
 ### Phase 1 remaining
@@ -39,23 +39,28 @@ This is the "aggressive 4–6 weeks, core features first" plan. If it slips to 8
 3. Kafka UI at `localhost:8090` shows the broker reachable
 4. `docker compose down -v && docker compose up -d` cleanly rebuilds from scratch
 
-## Phase 1 — Catalog service + storefront (IN PROGRESS)
+## Phase 1 — Catalog service + storefront (COMPLETE)
 
 **Goal:** A shopper can browse a real catalog.
 
 **Already done:**
-- `gg-catalog` scaffolded: Go 1.22, chi REST, gRPC, pgx, OTel, migrations + 8 seed products across 8 categories
+- `gg-catalog` scaffolded: Go 1.22, chi REST, pgx, OTel, migrations + 8 seed products across 8 categories
 - Storefront wired to catalog REST API via `catalog-client.ts`; falls back to mock data if catalog is down
 - Product, category, and product-detail pages built with design system
+- BFF OTel instrumentation (`instrumentation.ts` + `@vercel/otel`); W3C `traceparent`
+  propagated to gg-catalog, whose `otelhttp` middleware parents catalog spans to the BFF
+- Postgres query spans via `otelpgx` query tracer on the pgx pool
 
-**Remaining:**
-- [ ] Run `docker compose up -d` (from `gg-local/`) → `make migrate-up` → `make run` (from `gg-catalog/`) → verify storefront shows real products
-- [ ] Verify OTel trace from catalog appears in Grafana Tempo
+**Done:**
+- [x] Run `docker compose up -d` (from `gg-local/`) → migrations → `make run` (from `gg-catalog/`) → storefront shows real products
+- [x] OTel trace from catalog appears in Grafana Tempo
 
 **Exit criteria:**
-1. `docker compose up -d` (from `gg-local/`) → catalog migrations → `pnpm dev` — home page shows real products from Postgres
-2. Clicking a product shows its detail page with full specs
-3. A trace from browser → BFF → Catalog → Postgres is visible as a single connected flow in Grafana
+1. ✅ `docker compose up -d` (from `gg-local/`) → catalog migrations → `pnpm dev` — home page shows real products from Postgres
+2. ✅ Clicking a product shows its detail page with full specs
+3. ✅ A trace from browser → BFF → Catalog → Postgres is visible as a single connected flow in Grafana
+   (verified: one trace contains `gg-storefront-bff` render/`fetch` spans → `gg-catalog`
+   `http` spans → `otelpgx` `query`/`pool.acquire` Postgres spans)
 
 ## Phase 2 — Identity and cart (Week 3)
 
@@ -81,11 +86,11 @@ This is the "aggressive 4–6 weeks, core features first" plan. If it slips to 8
 
 **Deliverables:**
 - Orders service (Java/Spring): full saga orchestrator, outbox publisher, Kafka consumer
-- Inventory service (Go): reservation model, gRPC API, Kafka event consumers
+- Inventory service (Go): reservation model, REST API, Kafka event consumers
 - Stripe test mode integration (payment intents)
 - Kafka topics created, consumer groups configured
 - Stripe webhook handler (HTTP endpoint in Orders service)
-- Distributed trace propagation across gRPC and Kafka (context propagation via message headers)
+- Distributed trace propagation across REST and Kafka (context propagation via HTTP headers and message headers)
 - Saga recovery worker for mid-saga crashes
 - Reservation sweeper for expired reservations
 - End-to-end test: create cart → checkout → see CONFIRMED order

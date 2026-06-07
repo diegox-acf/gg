@@ -22,7 +22,7 @@ These aren't business ambitions. They're **load test targets** that force the ar
 | Product list page (SSR) | 400ms | 200ms catalog + 100ms render + 100ms network |
 | Product detail page (SSR) | 300ms | 150ms catalog + 100ms render + 50ms network |
 | Add to cart | 150ms | 100ms Redis + 50ms overhead |
-| Create order (saga start) | 2s | DB writes + gRPC calls, generous |
+| Create order (saga start) | 2s | DB writes + REST calls, generous |
 | Full checkout (to confirmation) | 5s | Includes Stripe roundtrip |
 | Trace ingest to visible in Grafana | 30s | Acceptable for a learning setup |
 
@@ -87,15 +87,14 @@ This means: container restarts are safe, and the saga resumes from its last comm
 ## Rate limiting
 
 - BFF: Next.js middleware rate limits per-IP.
-- Service-level: Each gRPC service has a simple token bucket for inbound calls.
-- Service-level: Each gRPC service has a simple token bucket for inbound calls.
+- Service-level: Each service has a simple token bucket for inbound calls.
 - Stripe: Stripe enforces its own rate limits; we respect their retry-after headers.
 
 ## Failure isolation
 
 - **Bulkhead pattern:** Per-service connection pools prevent one slow dependency from exhausting resources.
 - **Timeouts:** Every external call has an explicit timeout. No unbounded waits.
-- **Circuit breakers:** gRPC client middleware opens on error thresholds.
+- **Circuit breakers:** HTTP client middleware opens on error thresholds.
 - **Graceful degradation:** If Catalog is down, cart and order history still work; only new browsing fails. If Inventory is down, checkout fails but browsing works.
 
 ## Capacity planning (ballpark)
@@ -136,6 +135,6 @@ Idle-at-night scripts (scale cluster to zero overnight) are tracked as a Phase 0
 | **Durability** | RDS multi-AZ, S3 for object storage, outbox pattern for events |
 | **Security** | TLS everywhere externally, private subnets, IRSA, Secrets Manager, least-privilege IAM |
 | **Observability** | 100% trace sampling in dev; structured logs with trace_id; RED metrics on every service |
-| **Maintainability** | Clear service boundaries, Protobuf contracts, ADRs for decisions |
+| **Maintainability** | Clear service boundaries, REST contracts, ADRs for decisions |
 | **Cost** | < $200/month for 24/7 learning env |
 | **Developer experience** | Full local stack runnable via `docker compose up`; kind for local K8s |

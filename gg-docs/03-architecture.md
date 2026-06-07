@@ -4,7 +4,7 @@
 
 1. **One bounded context per service.** Services are not nouns (product, user, order) — they are domains of responsibility. Noun-per-service explodes into chatty distributed monoliths.
 2. **Databases are private.** No service reads another service's tables. Data sharing is via API or events.
-3. **gRPC for sync, events for async.** REST only at the edge.
+3. **REST for sync, events for async.**
 4. **Idempotency everywhere.** Every mutating operation accepts and respects an idempotency key.
 5. **Outbox pattern for event publishing.** Never dual-write to DB and message bus.
 6. **Observability is not optional.** Every service emits traces, metrics, and structured logs from day one.
@@ -35,11 +35,11 @@ graph TB
     Browser -- HTTPS --> BFF
     BFF -- OIDC --> Identity
     BFF -- REST --> Catalog
-    BFF -- gRPC --> Orders
+    BFF -- REST --> Orders
     BFF --> Redis
     Catalog --> CatalogDB
     Orders --> OrdersDB
-    Orders -- gRPC --> Inventory
+    Orders -- REST --> Inventory
     Orders -- HTTPS --> Stripe
     Inventory --> InventoryDB
 
@@ -67,11 +67,11 @@ graph TB
 ### Catalog (Go)
 **Owns:** Products, categories. **Reads:** nothing external. **Writes:** its own DB only.
 
-**APIs (gRPC):**
-- `ListProducts(filter, pagination) → products[]`
-- `GetProduct(id) → product`
-- `GetProductsByIds(ids[]) → products[]` (used by Orders for price snapshot)
-- `ListCategories() → categories[]`
+**APIs (REST):**
+- `GET /products` — list products with filter and pagination
+- `GET /products/{id}` — get product by ID
+- `GET /products?ids=...` — get products by IDs (used by Orders for price snapshot)
+- `GET /categories` — list categories
 
 **Internal:**
 - Seed script for initial product data
@@ -82,10 +82,10 @@ graph TB
 ### Orders (Java/Spring)
 **Owns:** Orders, the saga state machine, Stripe integration (MVP). **Reads:** nothing external via DB. **Writes:** its own DB + outbox.
 
-**APIs (gRPC):**
-- `CreateOrder(cart, address, idempotency_key) → order`
-- `GetOrder(id, user_id) → order`
-- `ListOrders(user_id, pagination) → orders[]`
+**APIs (REST):**
+- `POST /orders` — create order (with idempotency key)
+- `GET /orders/{id}` — get order by ID
+- `GET /orders?user_id=...` — list orders for a user
 
 **Internal components:**
 - Saga orchestrator (Spring `@Service` with explicit state machine)
@@ -99,11 +99,11 @@ graph TB
 ### Inventory (Go)
 **Owns:** Stock levels and reservations.
 
-**APIs (gRPC):**
-- `GetStock(product_id) → available`
-- `Reserve(order_id, items[], idempotency_key) → reservation_id`
-- `Commit(reservation_id) → ok`
-- `Release(reservation_id) → ok`
+**APIs (REST):**
+- `GET /stock/{product_id}` — get available stock
+- `POST /reservations` — reserve stock (with idempotency key)
+- `POST /reservations/{id}/commit` — commit reservation
+- `POST /reservations/{id}/release` — release reservation
 
 **Internal components:**
 - Event consumer for `OrderConfirmed` (commit) and `OrderFailed` (release)
@@ -113,7 +113,7 @@ graph TB
 
 ## Communication patterns
 
-### Synchronous (gRPC)
+### Synchronous (REST)
 
 Use when the caller needs an immediate answer and the callee is expected to be available.
 
@@ -122,10 +122,10 @@ Use when the caller needs an immediate answer and the callee is expected to be a
 - BFF → any service: for request-scoped reads and writes.
 
 **Rules:**
-- Deadlines on every call (`context.WithDeadline` / `CallCredentials`).
-- Retries with exponential backoff ONLY on idempotent operations.
-- Circuit breaker pattern via gRPC middleware.
-- Trace context propagated in metadata.
+- Timeouts on every call (`context.WithDeadline`).
+- Retries with exponential backoff ONLY on idempotent operations (GET, PUT).
+- Circuit breaker pattern via middleware.
+- Trace context propagated in HTTP headers (W3C TraceContext).
 
 ### Asynchronous (Kafka)
 
@@ -178,11 +178,11 @@ Orders is the orchestrator; Inventory and Payments are participants.
 
 | Data | Owner | Shared via |
 |---|---|---|
-| Products, prices | Catalog | gRPC read API |
+| Products, prices | Catalog | REST read API |
 | Users, credentials | Keycloak/Cognito | OIDC / JWT |
 | Cart | BFF (Redis) | Session cookie |
-| Orders | Orders | gRPC read API + events |
-| Stock, reservations | Inventory | gRPC read API + events |
+| Orders | Orders | REST read API + events |
+| Stock, reservations | Inventory | REST read API + events |
 | Payment intents | Orders (MVP) | — |
 
 ## Deployment topology (docker-compose)
@@ -204,16 +204,16 @@ All services run in a single `docker-compose` network. Service discovery via con
 | loki | 3100 | logs |
 | tempo | 3200 | traces |
 | grafana | 3001 | dashboards (admin/admin) |
-| catalog service | 8080 | REST + gRPC |
-| orders service | 8081 | gRPC + REST |
-| inventory service | 8082 | gRPC only |
+| catalog service | 8080 | REST |
+| orders service | 8081 | REST |
+| inventory service | 8082 | REST |
 | storefront (Next.js) | 3000 | BFF + UI |
 
 ## Observability architecture
 
 ### Traces
 - OpenTelemetry SDK in every service (auto-instrumentation where available).
-- Trace context propagated through gRPC metadata and Kafka message headers (W3C TraceContext).
+- Trace context propagated through HTTP headers and Kafka message headers (W3C TraceContext).
 - Sampled at 100% in dev, configurable in higher envs.
 - Tempo stores traces; Grafana visualizes.
 

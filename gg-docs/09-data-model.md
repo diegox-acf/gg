@@ -278,10 +278,10 @@ CREATE INDEX idx_outbox_pending ON outbox (created_at) WHERE published_at IS NUL
 | Column | Lives in | References | Enforced by |
 |---|---|---|---|
 | `products.category_id` | gg_catalog | `categories.id` | DB foreign key (same DB) |
-| `order_line_items.product_id` | gg_orders | `products.id` in gg_catalog | Application (gRPC fetch at order time) |
+| `order_line_items.product_id` | gg_orders | `products.id` in gg_catalog | Application (REST fetch at order time) |
 | `orders.user_id` | gg_orders | Keycloak user (external) | JWT validation in BFF |
 | `reservations.product_id` | gg_inventory | `products.id` in gg_catalog | Application |
-| `reservations.order_id` | gg_inventory | `orders.id` in gg_orders | Application (gRPC call from Orders) |
+| `reservations.order_id` | gg_inventory | `orders.id` in gg_orders | Application (REST call from Orders) |
 
 ## Kafka topics and event payloads
 

@@ -54,7 +54,7 @@ Phase 2 entity. In MVP, payment state is tracked via `orders.payment_intent_id` 
 ### UC-01: Browse catalog
 **Actor:** Guest or Shopper.
 **Flow:**
-1. User visits storefront; Next.js server-renders landing page with featured products (call to Catalog gRPC `ListProducts`).
+1. User visits storefront; Next.js server-renders landing page with featured products (REST call to Catalog `GET /products`).
 2. User navigates to category; paginated product list loads.
 3. User opens product detail page; Next.js renders full specs and image gallery.
 
@@ -92,12 +92,12 @@ Standard. Quantity changes recompute line totals client-side; authoritative pric
 2. BFF validates session, calls Orders.CreateOrder(cart_snapshot, address, idempotency_key).
 3. Orders:
    a. Starts DB transaction.
-   b. Re-fetches current prices from Catalog (gRPC) — authoritative pricing.
+   b. Re-fetches current prices from Catalog (REST) — authoritative pricing.
    c. Writes Order row (status=PENDING) + outbox event OrderPlaced.
    d. Commits transaction.
 4. Outbox poller publishes OrderPlaced to Kafka (`orders.order-created`).
 5. Orders saga picks up internal state, transitions to RESERVING.
-6. Orders calls Inventory.Reserve(order_id, items, idempotency_key) over gRPC.
+6. Orders calls Inventory `POST /reservations` (with order_id, items, idempotency_key) over REST.
 7. Inventory:
    a. For each line item: decrement available, increment reserved, insert reservation row with 15min expiry.
    b. Returns reservation_id.

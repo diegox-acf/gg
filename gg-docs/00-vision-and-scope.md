@@ -10,7 +10,7 @@ Treating it as a real product (real auth, real payments in test mode, real obser
 
 This ranking is load-bearing. Every scope decision should be traceable back to it.
 
-1. **Microservices communication** — gRPC, events, saga pattern, idempotency, outbox
+1. **Microservices communication** — REST, events, saga pattern, idempotency, outbox
 2. **Observability** — distributed tracing, metrics, logs, dashboards, alerting
 3. **Container orchestration** — docker-compose, service networking, local dev tooling
 4. **Frontend architecture and UX** — Next.js App Router, server components, shadcn

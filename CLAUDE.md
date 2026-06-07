@@ -11,7 +11,7 @@ rejected — don't relitigate accepted ADRs without writing a superseding one.
 For DB schema work, also read `gg-docs/09-data-model.md`.
 
 ## Learning priorities (ranked, load-bearing)
-1. Microservices communication (gRPC, events, saga)
+1. Microservices communication (events, saga)
 2. Observability (tracing, metrics, logs)
 3. Docker Compose & container orchestration
 4. Frontend architecture & UX
@@ -35,13 +35,12 @@ Postgres, Redis, Kafka, Stripe test mode.
 Everything lives in this single repo. Each service is a top-level directory:
 ```
 gg/
-├── gg-proto/        # Protobuf source files + per-service gen templates
-├── gg-catalog/      # Go catalog service (gen/ has committed catalog stubs)
-├── gg-inventory/    # Go inventory service (gen/ has committed inventory stubs)
-├── gg-orders/       # Java orders service (stubs generated at build time by Gradle)
-├── gg-storefront/   # Next.js BFF + storefront (packages/types/gen/ has TS stubs)
+├── gg-catalog/      # Go catalog service
+├── gg-inventory/    # Go inventory service
+├── gg-orders/       # Java orders service
+├── gg-storefront/   # Next.js BFF + storefront
 ├── gg-docs/         # Architecture docs and ADRs
-├── Makefile         # Root targets: proto-gen, catalog-build, infra-up, etc.
+├── Makefile         # Root targets: catalog-build, infra-up, etc.
 └── .github/workflows/  # Per-service CI workflows + release tagging
 ```
 
@@ -53,17 +52,8 @@ auto-creates a git tag `gg-{service}/v{version}`.
 Each service has its own GitHub Actions workflow triggered by pushes to its
 branch pattern. See `.github/workflows/` for details.
 
-## Proto workflow
-- Source files live in `gg-proto/{service}/v1/*.proto`
-- Each service has its own gen template in `gg-proto/`: `buf.gen.go-catalog.yaml`, `buf.gen.go-inventory.yaml`, `buf.gen.ts.yaml`
-- Go stubs committed by CI into each service's own `gen/` directory (e.g. `gg-catalog/gen/`)
-- TypeScript stubs committed by CI into `gg-storefront/packages/types/gen/`
-- Java (Orders) stubs generated at build time by Gradle `com.google.protobuf` plugin — never committed
-- Go services import stubs from their own `gen/` package (no go.work needed)
-- To update protos: branch `gg-proto/{version}`, edit `.proto` files, push → CI generates + commits stubs into each service
-
 ## Conventions
-- One bounded context per service, private databases, gRPC sync + events async
+- One bounded context per service, private databases, REST sync + events async
 - Transactional outbox for all event publishing
 - Idempotency keys on all mutating ops
 - ADRs for non-trivial decisions — immutable, supersede don't edit
@@ -73,8 +63,7 @@ branch pattern. See `.github/workflows/` for details.
 
 ## Phase 0 next steps
 1. docker-compose.yml with full infra stack (Postgres ×3, Redis, Kafka, observability)
-2. proto/ package with Buf + initial contracts
-3. Catalog hello-world in Go with OTel wired end-to-end
+2. Catalog hello-world in Go with OTel wired end-to-end
 
 ## Design system
 For any UI/frontend work, read `gg-gaming-design-system/` to apply the correct brand, colors, typography, and component style before writing any code.

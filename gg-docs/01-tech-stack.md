@@ -18,7 +18,7 @@ Every choice below has a rationale. Where alternatives were seriously considered
 
 Next.js is chosen over plain React/Vite because server components meaningfully improve product page performance and SEO, and route handlers give us a clean BFF layer so the browser talks to one API instead of seven. The BFF aggregates calls to the microservices and handles session/auth translation.
 
-Admin dashboard is deferred to Phase 2 but will live as a separate Next.js app in the same Turborepo, sharing a UI package and shared TypeScript types generated from the Protobuf contracts.
+Admin dashboard is deferred to Phase 2 but will live as a separate Next.js app in the same Turborepo, sharing a UI package and shared TypeScript types.
 
 ## Backend services
 
@@ -26,9 +26,9 @@ Each service uses the language best suited to its workload. No polyglot-for-its-
 
 | Service | Language | Framework | Why this language |
 |---|---|---|---|
-| Catalog | Go | Standard library + grpc-go + chi (REST gateway) | Read-heavy workload, clean gRPC story, low memory footprint, good concurrency model |
+| Catalog | Go | Standard library + chi | Read-heavy workload, clean REST story, low memory footprint, good concurrency model |
 | Orders | Java 21 | Spring Boot 3, Spring Security, Spring Data JPA | Transactional core + saga orchestration; Spring's transaction management and mature ecosystem earn their complexity here |
-| Inventory | Go | Standard library + grpc-go | Hot path for stock reservations; concurrency and low latency matter |
+| Inventory | Go | Standard library | Hot path for stock reservations; concurrency and low latency matter |
 | Payments (Phase 2) | Java | Spring Boot | Stripe Java SDK is excellent; strong typing helps with money |
 | Notifications (Phase 2) | Node.js 22 | Fastify, TypeScript | I/O bound, templating is easy, event-driven |
 
@@ -40,13 +40,12 @@ Each service uses the language best suited to its workload. No polyglot-for-its-
 
 | Concern | Library / Tool | Notes |
 |---|---|---|
-| gRPC server | `google.golang.org/grpc` + `protoc-gen-go` | Generated from shared `proto/` |
-| HTTP gateway | `github.com/go-chi/chi` + `grpc-gateway` | REST↔gRPC transcoding for BFF |
+| HTTP server | `github.com/go-chi/chi` | REST API for BFF and service clients |
 | Database driver | `github.com/jackc/pgx/v5` | No ORM; idiomatic SQL with named queries |
 | Migrations | `golang-migrate/migrate` | Embedded; runs on service start |
-| Configuration | `github.com/kelseyhightower/envconfig` | Struct-tag env var binding; fails fast on missing required vars |
+| Configuration | `github.com/caarlos0/env/v11` | Struct-tag env var binding; fails fast on missing required vars |
 | Structured logging | `log/slog` (stdlib) | JSON handler; `trace_id` and `span_id` injected via OTel context |
-| Tracing | `go.opentelemetry.io/otel` + `otelgrpc` | Auto-instruments gRPC server and client interceptors |
+| Tracing | `go.opentelemetry.io/otel` + `otelhttp` | Auto-instruments HTTP handlers |
 | Metrics | `github.com/prometheus/client_golang` | Custom histograms + counters; `/metrics` endpoint |
 | Testing | `github.com/stretchr/testify` + `testcontainers-go` | Integration tests use real Postgres in Docker |
 | Linting | `golangci-lint` | `staticcheck`, `errcheck`, `gosec`, `revive` enabled |
@@ -65,7 +64,7 @@ Shares the same Go toolchain and observability setup as Catalog. Key differences
 | Concern | Detail |
 |---|---|
 | Concurrency control | Optimistic locking via `version` column on stock rows; conflicts retry with backoff |
-| HTTP exposure | None — gRPC only; internal service, not called by BFF directly |
+| HTTP exposure | REST API — internal service, called by Orders only |
 
 **Design patterns applied:**
 - **Repository** — stock and reservation access behind interfaces.
@@ -77,14 +76,14 @@ Shares the same Go toolchain and observability setup as Catalog. Key differences
 
 | Concern | Library / Tool | Notes |
 |---|---|---|
-| gRPC client | `io.grpc:grpc-java` + `net.devh:grpc-spring-boot-starter` | Calls Catalog (prices) and Inventory (reservations) |
+| REST client | Spring Boot `RestClient` | Calls Catalog (prices) and Inventory (reservations) |
 | ORM | Spring Data JPA + Hibernate | Complex transactional model justifies ORM; use native queries for hot paths |
 | DB pool | HikariCP (Spring Boot default) | Tune `maximum-pool-size` ≤ RDS `max_connections / replicas` |
 | Migrations | Flyway | SQL files in `src/main/resources/db/migration`; runs on startup |
 | Money | `java.math.BigDecimal` + custom `Money` value object | Never `float`/`double` for currency |
 | Stripe | `com.stripe:stripe-java` | PaymentIntent create + confirm with idempotency key |
 | Structured logging | Logback + `logstash-logback-encoder` | JSON to stdout; MDC carries `trace_id`, `order_id` |
-| Tracing | OpenTelemetry Java agent (`-javaagent`) | Auto-instruments Spring MVC, JDBC, gRPC |
+| Tracing | OpenTelemetry Java agent (`-javaagent`) | Auto-instruments Spring MVC, JDBC, RestClient |
 | Testing | JUnit 5 + Mockito + Testcontainers | Integration tests with real Postgres; Mockito for unit-testing saga steps |
 | Build | Gradle 8 (Kotlin DSL) | Faster incremental builds than Maven |
 | Code style | Spotless + Google Java Format | Enforced in CI; no review comments about formatting |
@@ -104,12 +103,12 @@ Shares the same Go toolchain and observability setup as Catalog. Key differences
 
 | Concern | Library / Tool | Notes |
 |---|---|---|
-| Backend calls | `@connectrpc/connect` | Type-safe gRPC-compatible calls from Server Components; no REST needed |
+| Backend calls | Fetch API (built-in) | REST calls from Server Components to backend services |
 | Client data fetching | TanStack Query v5 | Client-side only; reads default to Server Components |
 | Forms | React Hook Form + Zod | Client-side validation; server re-validates — never trust the client |
 | Auth | Auth.js (NextAuth v5) | OIDC adapter for Keycloak or Cognito; HTTP-only session cookie |
 | Cart persistence | Redis via Server Actions | No client-side cart state; Server Actions own the write path |
-| Monorepo | Turborepo | `packages/ui` (shadcn components), `packages/types` (generated Protobuf types) |
+| Monorepo | Turborepo | `packages/ui` (shadcn components), `packages/types` (shared TypeScript types) |
 | Testing | Vitest (unit), Playwright (e2e) | Playwright tests cover the full checkout golden path |
 | Linting | ESLint (Next.js config) + Prettier | |
 
@@ -137,10 +136,9 @@ Shares the same Go toolchain and observability setup as Catalog. Key differences
 
 | Pattern | Technology |
 |---|---|
-| Sync service-to-service | gRPC (HTTP/2, Protobuf) |
+| Sync service-to-service | REST (HTTP/JSON) |
 | Client-to-server | REST via Next.js BFF route handlers |
 | Async events | Kafka (topics, consumer groups) |
-| Contracts | Protobuf schemas in a shared `proto/` package, code-generated for Go, Java, TypeScript |
 | Idempotency | Client-supplied idempotency keys on all mutating operations |
 | Transactional outbox | Every service writes events to an outbox table in the same DB transaction; a poller publishes to Kafka |
 
@@ -153,7 +151,7 @@ Shares the same Go toolchain and observability setup as Catalog. Key differences
 | S3 | Product images, generated invoices |
 | OpenSearch | Deferred to Phase 2 for product search |
 
-One-DB-per-service is strict. Services never read each other's tables. Data sharing happens via gRPC calls or events only.
+One-DB-per-service is strict. Services never read each other's tables. Data sharing happens via REST calls or events only.
 
 ## Infrastructure
 
@@ -210,10 +208,9 @@ The Grafana OSS stack is chosen over managed alternatives (Datadog, New Relic) b
 | Concern | Tool |
 |---|---|
 | Local infra stack | docker-compose (root `docker-compose.yml`) |
-| API mocking | Prism (OpenAPI) or Buf for gRPC |
+| API mocking | Prism (OpenAPI) |
 | Load testing | k6 |
 | Chaos testing (Phase 2) | Chaos Mesh |
-| Protobuf / gRPC tooling | Buf for linting, breaking change detection, code gen |
 
 ## Naming convention
 
@@ -227,7 +224,6 @@ Rule: `gg-{domain}` for all repos.
 | `gg-catalog` | Go catalog service | 1 |
 | `gg-orders` | Java orders + saga orchestrator | 3 |
 | `gg-inventory` | Go inventory service | 3 |
-| `gg-proto` | Shared Protobuf definitions (Buf) | 0 |
 | `gg-infra` | Terraform / Terragrunt (archived — docker-compose replaces this) | — |
 | `gg-notifications` | Node.js notifications service | Phase 2 |
 | `gg-payments` | Java payments service (extracted from Orders) | Phase 2 |
@@ -240,7 +236,7 @@ Rule: `@gg/{domain}` for all npm packages.
 | Package | What it is |
 |---|---|
 | `@gg/ui` | Shared shadcn/ui component library |
-| `@gg/types` | Generated Protobuf TypeScript types |
+| `@gg/types` | Shared TypeScript types |
 
 ### Summary rule
 - GitHub repos: `gg-{domain}` (kebab-case)

@@ -425,3 +425,27 @@ The pending decisions recorded below are now closed. No further action required.
 | PD-04 | Team size | Solo — branching strategy is `main` + feature branches, no formal review process |
 | PD-05 | Guest checkout | No guest checkout in MVP — auth is required before cart persistence (Phase 2) |
 | PD-06 | Order number format | Human-friendly: `GMR-YYYY-NNNNN` (e.g. `GMR-2026-00042`), generated in Orders service |
+
+## ADR-016: Remove gRPC; use REST for service-to-service communication (supersedes ADR-012 library choices, ADR-015 proto strategy)
+
+**Status:** Accepted
+**Date:** 2026-06-02
+
+**Context:**
+The project was scaffolded with gRPC as the sync communication layer (protobuf contracts, buf toolchain, generated stubs in Go and TypeScript, OTel gRPC interceptor). At Phase 1, no service actually consumes the gRPC server: the storefront uses mock data, gg-inventory has no implementation, and gg-orders doesn't exist. The full proto toolchain (buf, protoc-gen-go, protoc-gen-go-grpc, ConnectRPC TypeScript stubs) added build complexity and a non-trivial learning surface (IDL management, breaking change detection, multi-language codegen) without delivering observable benefit at the current scale.
+
+**Decision:**
+Remove gRPC entirely. All sync service-to-service calls use REST (HTTP/JSON). The proto toolchain (buf, generated stubs, gg-proto/ directory) is deleted. The OTel trace exporter is switched from OTLP gRPC to OTLP HTTP (port 4318) to eliminate the direct grpc-go dependency from application code.
+
+**Consequences:**
+- Eliminates the proto toolchain from the dev and CI loop: no buf, no codegen, no generated files to keep in sync.
+- REST is already implemented in gg-catalog (chi router, JSON handlers); no new server-side work needed.
+- Service contracts are expressed as OpenAPI docs or inline in gg-docs — lower ceremony than IDL.
+- gRPC remains available as a Phase 3+ investigation if the learning goal resurfaces (e.g., benchmarking REST vs gRPC latency for the catalog read path).
+- OTLP HTTP exporter (port 4318) is functionally equivalent; OTel Collector already exposes both ports.
+- Learning priority 1 narrows from "gRPC, events, saga" to "events, saga" for the current phase.
+
+**Alternatives considered:**
+- **Keep gRPC but defer codegen to build time:** Rejected. Still requires buf + protoc in every build environment; no simplification.
+- **Keep gRPC for Orders→Inventory only:** Rejected. Inventory is not yet implemented; this is a premature optimization.
+- **ConnectRPC (gRPC-over-HTTP):** Rejected. Same codegen overhead; REST is simpler and sufficient.
