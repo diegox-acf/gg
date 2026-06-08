@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Logo } from "@gg/ui";
 import { auth } from "@/auth";
 import { NavClient } from "./nav-client";
-import { ShopMenu } from "./shop-menu";
+import { CategoryNav } from "./category-nav";
 
 export async function Nav() {
   const session = await auth();
@@ -20,9 +20,9 @@ export async function Nav() {
         <Logo size="nav" />
       </Link>
 
-      {/* Desktop: a single "Shop All" mega-menu instead of 14 inline links */}
-      <div className="ml-8 hidden flex-1 items-center md:flex">
-        <ShopMenu />
+      {/* Desktop: one dropdown per category group, centered across the bar */}
+      <div className="hidden flex-1 items-center justify-center md:flex">
+        <CategoryNav />
       </div>
 
       {/* Right side — Client Component handles cart, account, mobile menu */}
