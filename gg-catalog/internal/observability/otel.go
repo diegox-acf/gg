@@ -4,13 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otellogglobal "go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
@@ -68,7 +72,29 @@ func InitOTel(ctx context.Context, endpoint, serviceName, serviceVersion, enviro
 	)
 	otellogglobal.SetLoggerProvider(lp)
 
+	// Metrics → collector → Prometheus (remote write). otelhttp picks up the
+	// global MeterProvider and emits HTTP server RED metrics automatically.
+	metricExp, err := otlpmetrichttp.New(ctx,
+		otlpmetrichttp.WithEndpoint(endpoint),
+		otlpmetrichttp.WithInsecure(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("otel: create metric exporter: %w", err)
+	}
+	mp := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExp,
+			sdkmetric.WithInterval(15*time.Second),
+		)),
+		sdkmetric.WithResource(res),
+	)
+	otel.SetMeterProvider(mp)
+
+	// Go runtime metrics (GC, goroutines, memory) via the global MeterProvider.
+	if err := runtime.Start(runtime.WithMinimumReadMemStatsInterval(15 * time.Second)); err != nil {
+		return nil, fmt.Errorf("otel: start runtime metrics: %w", err)
+	}
+
 	return func(ctx context.Context) error {
-		return errors.Join(tp.Shutdown(ctx), lp.Shutdown(ctx))
+		return errors.Join(tp.Shutdown(ctx), lp.Shutdown(ctx), mp.Shutdown(ctx))
 	}, nil
 }
