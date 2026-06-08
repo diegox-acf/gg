@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { IconBtn } from "./icon-btn";
-import { NAV_ITEMS } from "./nav-items";
+import { CATEGORY_GROUPS } from "./nav-items";
 import { AppearanceMenu } from "../theme/appearance-menu";
 import { AppearanceControls } from "../theme/appearance-controls";
 import { useCart } from "@/components/cart/cart-provider";
@@ -110,15 +110,28 @@ export function NavClient({ account }: { account: Account | null }) {
       {/* Mobile dropdown menu */}
       {menuOpen && (
         <div className="absolute left-0 right-0 top-[60px] z-[200] max-h-[calc(100vh-60px)] animate-[slideDown_200ms_ease_both] overflow-y-auto border-b border-border bg-surface px-8 py-4 md:hidden">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMenuOpen(false)}
-              className="block border-b border-border py-[10px] font-[family-name:var(--font-body)] text-[14px] font-medium uppercase tracking-[0.06em] text-fg-1 last:border-b-0 hover:text-primary"
-            >
-              {item.label}
-            </Link>
+          {CATEGORY_GROUPS.map((group) => (
+            <div key={group.title} className="mb-3">
+              <div className="mb-1 mt-2 flex items-center gap-2">
+                <span className="h-[10px] w-[3px] bg-primary" aria-hidden="true" />
+                <h3 className="font-[family-name:var(--font-display)] text-[10px] font-semibold uppercase tracking-[0.14em] text-fg-3">
+                  {group.title}
+                </h3>
+              </div>
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 py-[9px] font-[family-name:var(--font-body)] text-[14px] font-medium tracking-[0.04em] text-fg-1 hover:text-primary"
+                >
+                  <span aria-hidden="true" className="w-4 text-center text-fg-3">
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           ))}
 
           {/* Appearance controls for mobile (popover trigger is hidden below sm) */}

@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { Logo } from "@gg/ui";
 import { auth } from "@/auth";
-import { NavLink } from "./nav-link";
 import { NavClient } from "./nav-client";
-import { NAV_ITEMS } from "./nav-items";
+import { ShopMenu } from "./shop-menu";
 
 export async function Nav() {
   const session = await auth();
@@ -21,13 +20,9 @@ export async function Nav() {
         <Logo size="nav" />
       </Link>
 
-      {/* Desktop nav links — 14 categories overflow, so the bar scrolls (mega-menu TBD) */}
-      <div className="mx-6 hidden flex-1 items-center gap-5 overflow-x-auto md:flex [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {NAV_ITEMS.map((item) => (
-          <NavLink key={item.href} href={item.href}>
-            {item.label}
-          </NavLink>
-        ))}
+      {/* Desktop: a single "Shop All" mega-menu instead of 14 inline links */}
+      <div className="ml-8 hidden flex-1 items-center md:flex">
+        <ShopMenu />
       </div>
 
       {/* Right side — Client Component handles cart, account, mobile menu */}
