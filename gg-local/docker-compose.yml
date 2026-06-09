@@ -237,6 +237,19 @@ services:
   #   depends_on:
   #     postgres-catalog:
   #       condition: service_healthy
+  #
+  # inventory:
+  #   build: ../gg-inventory
+  #   ports:
+  #     - "8082:8082"
+  #   environment:
+  #     DATABASE_URL: postgres://postgres:postgres@postgres-inventory:5432/gg_inventory
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4318
+  #   depends_on:
+  #     postgres-inventory:
+  #       condition: service_healthy
+  #   # NOTE: migrations are run separately (`make -C ../gg-inventory migrate-up`)
+  #   #       against host port 5434, not auto-applied on startup.
 
 volumes:
   postgres_catalog_data:

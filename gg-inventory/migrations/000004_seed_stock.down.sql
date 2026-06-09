@@ -1,0 +1,1 @@
+DELETE FROM stock WHERE product_id BETWEEN 1 AND 1000;
