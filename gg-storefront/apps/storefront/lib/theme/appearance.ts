@@ -1,9 +1,9 @@
-// Accent (primary) color personalization. The brand default is #ff3500; users
+// Accent (primary) color personalization. The brand default is #d4ff00; users
 // may override it — we persist the hex and re-derive every primary-* token from
 // it, including a luminance-aware "ink" so on-primary text stays readable.
 
 export const ACCENT_STORAGE_KEY = "gg-accent";
-export const DEFAULT_ACCENT = "#ff3500";
+export const DEFAULT_ACCENT = "#d4ff00";
 
 export interface AccentPreset {
   label: string;
@@ -11,16 +11,16 @@ export interface AccentPreset {
 }
 
 export const ACCENT_PRESETS: AccentPreset[] = [
-  { label: "Inferno Red", value: "#ff3500" },
-  { label: "Ember Orange", value: "#ff6600" },
-  { label: "Solar Gold", value: "#ffb800" },
   { label: "Toxic Yellow", value: "#d4ff00" },
   { label: "Volt Green", value: "#00ff88" },
   { label: "Cyber Cyan", value: "#00e5ff" },
   { label: "Plasma Blue", value: "#4a8bff" },
-  { label: "Synth Purple", value: "#a855f7" },
   { label: "Hot Magenta", value: "#ff00cc" },
+  { label: "Synth Purple", value: "#a855f7" },
   { label: "Neon Coral", value: "#ff3d57" },
+  { label: "Inferno", value: "#ff6600" },
+  { label: "Solar Gold", value: "#ffb800" },
+  { label: "Off-White", value: "#f0f0ec" },
 ];
 
 // Tokens re-derived from the accent. Mirrored by THEME_INIT_SCRIPT for FOUC-free
@@ -67,7 +67,10 @@ function rgba(hex: string, alpha: number): string {
 
 function darken(hex: string, amount: number): string {
   const f = 1 - amount;
-  const hp = (c: number) => clamp(c * f).toString(16).padStart(2, "0");
+  const hp = (c: number) =>
+    clamp(c * f)
+      .toString(16)
+      .padStart(2, "0");
   const [r, g, b] = channels(hex);
   return `#${hp(r)}${hp(g)}${hp(b)}`;
 }
