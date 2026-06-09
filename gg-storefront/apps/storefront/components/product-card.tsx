@@ -36,7 +36,10 @@ export function ProductCard({ product }: ProductCardProps) {
     /* Container/Presenter: this card is the presenter; data comes from server */
     <div
       onMouseEnter={() => {
-        if (!isOOS) { setHovered(true); triggerScan(); }
+        if (!isOOS) {
+          setHovered(true);
+          triggerScan();
+        }
       }}
       onMouseLeave={() => setHovered(false)}
       className={cn(
@@ -44,10 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
         "bg-surface border border-border",
         "transition-all duration-[200ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
         isOOS ? "opacity-[0.55]" : "cursor-pointer",
-        !isOOS && hovered && [
-          "border-border-accent",
-          "-translate-y-[3px]",
-        ],
+        !isOOS && hovered && ["border-border-accent", "-translate-y-[3px]"],
       )}
       style={
         !isOOS && hovered
@@ -90,21 +90,14 @@ export function ProductCard({ product }: ProductCardProps) {
       />
 
       {/* Image area */}
-      <div className="relative flex h-[130px] items-center justify-center overflow-hidden bg-elevated">
-        {/* SKU watermark */}
-        <span
-          className="absolute right-[9px] top-[7px] font-[family-name:var(--font-mono)] text-[8px] tracking-[0.08em] text-fg-1 opacity-60"
-        >
-          {product.sku}
-        </span>
-
+      <div className="relative flex h-[200px] items-center justify-center overflow-hidden bg-elevated">
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
             alt={product.name}
             fill
             sizes="(max-width: 640px) 50vw, 25vw"
-            className="object-contain p-2"
+            className="object-cover"
             // Catalog serves these on localhost; Next 16's optimizer blocks loopback
             // IPs (SSRF guard), so load them directly.
             unoptimized
@@ -116,17 +109,21 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Card body */}
       <div className="flex flex-1 flex-col p-[12px]">
-        <p className="mb-[3px] font-[family-name:var(--font-body)] text-[8px] font-semibold uppercase tracking-[0.1em] text-fg-3">
-          {product.brand}
-        </p>
-        <p className="mb-[10px] min-h-[30px] font-[family-name:var(--font-body)] text-[12px] font-semibold leading-[1.3] text-fg-1">
+        <div className="mb-[3px] flex items-center justify-between gap-2">
+          <p className="font-body text-[10px] font-semibold uppercase tracking-[0.1em] text-fg-3">
+            {product.brand}
+          </p>
+          {/* SKU sits at the right edge of the brand row (right-0 via justify-between) */}
+          <span className="font-mono text-[10px] tracking-[0.08em] text-fg-3">
+            {product.sku}
+          </span>
+        </div>
+        <p className="mb-[10px] min-h-[30px] font-body text-[12px] font-semibold leading-[1.3] text-fg-1">
           {product.name}
         </p>
 
         <div className="mb-[10px] flex items-center justify-between">
-          <span
-            className="font-[family-name:var(--font-display)] text-[16px] font-black tracking-[-0.02em] text-fg-1"
-          >
+          <span className="font-display text-[16px] font-black tracking-[-0.02em] text-fg-1">
             {formatPrice(product.priceCents)}
           </span>
           <Badge variant={product.stockStatus} />
@@ -146,7 +143,7 @@ export function ProductCard({ product }: ProductCardProps) {
           }}
           className={cn(
             "relative z-30 w-full py-[9px]",
-            "font-[family-name:var(--font-display)] text-[10px] font-bold uppercase tracking-[0.1em]",
+            "font-display text-[10px] font-bold uppercase tracking-[0.1em]",
             "clip-cyber-xs border-none transition-all duration-150",
             isOOS
               ? "cursor-not-allowed bg-border text-fg-3"
