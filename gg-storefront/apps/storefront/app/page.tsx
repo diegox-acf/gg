@@ -19,14 +19,14 @@ function SectionHeader({
     <div className="mb-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <span className="h-5 w-[3px] bg-primary" />
-        <h2 className="font-[family-name:var(--font-display)] text-[15px] font-bold uppercase tracking-[0.08em] text-fg-1 sm:text-[16px]">
+        <h2 className="font-display text-[15px] font-bold uppercase tracking-[0.08em] text-fg-1 sm:text-[16px]">
           {title}
         </h2>
       </div>
       {action && (
         <Link
           href={action.href}
-          className="flex items-center gap-1.5 font-[family-name:var(--font-body)] text-[12px] uppercase tracking-[0.06em] text-fg-3 transition-colors hover:text-primary"
+          className="flex items-center gap-1.5 font-body text-[12px] uppercase tracking-[0.06em] text-fg-3 transition-colors hover:text-primary"
         >
           {action.label}
           <ArrowRight size={13} />
@@ -61,7 +61,7 @@ export default async function HomePage() {
                 <span className="text-[18px] leading-none text-fg-2 transition-colors group-hover:text-primary">
                   {cat.icon}
                 </span>
-                <span className="font-[family-name:var(--font-body)] text-[12px] font-medium uppercase tracking-[0.06em] text-fg-2 transition-colors group-hover:text-primary">
+                <span className="font-body text-[12px] font-medium uppercase tracking-[0.06em] text-fg-2 transition-colors group-hover:text-primary">
                   {cat.name}
                 </span>
               </Link>
@@ -78,16 +78,16 @@ export default async function HomePage() {
           }}
         >
           <div>
-            <p className="mb-1 font-[family-name:var(--font-display)] text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-inverse opacity-70">
+            <p className="mb-1 font-display text-[10px] font-semibold uppercase tracking-[0.18em] text-fg-inverse opacity-70">
               Flash Sale — Ends Tonight
             </p>
-            <p className="font-[family-name:var(--font-display)] text-[16px] font-extrabold tracking-[0.02em] text-fg-inverse sm:text-[17px]">
+            <p className="font-display text-[16px] font-extrabold tracking-[0.02em] text-fg-inverse sm:text-[17px]">
               Up to 15% off select GPUs &amp; peripherals
             </p>
           </div>
           <Link
             href="/category/gpus"
-            className="clip-cyber-xs whitespace-nowrap bg-fg-inverse px-5 py-2.5 font-[family-name:var(--font-display)] text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary transition-opacity duration-150 hover:opacity-85"
+            className="clip-cyber-xs whitespace-nowrap bg-fg-inverse px-5 py-2.5 font-display text-[11px] font-extrabold uppercase tracking-[0.12em] text-primary transition-opacity duration-150 hover:opacity-85"
           >
             Shop Sale →
           </Link>

@@ -44,7 +44,7 @@ export default async function CategoryPage({
         {/* Breadcrumb */}
         <nav
           aria-label="Breadcrumb"
-          className="mb-6 flex items-center gap-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.08em] text-fg-3"
+          className="mb-6 flex items-center gap-1.5 font-body text-[11px] uppercase tracking-[0.08em] text-fg-3"
         >
           <Link href="/" className="transition-colors hover:text-fg-1">
             Home
@@ -55,10 +55,10 @@ export default async function CategoryPage({
 
         {/* Header */}
         <header className="mb-10">
-          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-black uppercase tracking-[-0.01em] text-fg-1 sm:text-[34px]">
+          <h1 className="font-display text-[28px] font-black uppercase tracking-[-0.01em] text-fg-1 sm:text-[34px]">
             {category.name}
           </h1>
-          <p className="mt-2 max-w-[60ch] font-[family-name:var(--font-body)] text-[13px] leading-[1.6] text-fg-2">
+          <p className="mt-2 max-w-[60ch] font-body text-[13px] leading-[1.6] text-fg-2">
             {category.description}
           </p>
         </header>

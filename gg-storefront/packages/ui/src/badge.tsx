@@ -113,8 +113,8 @@ export function Badge({ variant, label, className }: BadgeProps) {
         cfg.text,
         cfg.border,
         isDisplay
-          ? "px-3 py-1 text-[10px] font-[family-name:var(--font-display)] font-bold uppercase tracking-[0.1em]"
-          : "px-[10px] py-[3px] text-[11px] font-[family-name:var(--font-body)] font-semibold tracking-[0.04em]",
+          ? "px-3 py-1 text-[10px] font-display font-bold uppercase tracking-[0.1em]"
+          : "px-[10px] py-[3px] text-[11px] font-body font-semibold tracking-[0.04em]",
         className,
       )}
     >

@@ -13,10 +13,10 @@ export default async function LoginPage() {
 
   return (
     <div>
-      <h1 className="mb-1 font-[family-name:var(--font-display)] text-[20px] font-extrabold uppercase tracking-[0.08em] text-fg-1">
+      <h1 className="mb-1 font-display text-[20px] font-extrabold uppercase tracking-[0.08em] text-fg-1">
         Sign in
       </h1>
-      <p className="mb-6 font-[family-name:var(--font-body)] text-[12px] text-fg-3">
+      <p className="mb-6 font-body text-[12px] text-fg-3">
         Welcome back, gamer.
       </p>
       <Suspense>

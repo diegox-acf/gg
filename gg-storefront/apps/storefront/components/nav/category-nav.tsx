@@ -67,7 +67,7 @@ function GroupDropdown({
         aria-haspopup="true"
         className={cn(
           "flex items-center gap-1.5 py-1",
-          "font-[family-name:var(--font-body)] text-[12px] font-medium uppercase tracking-[0.1em]",
+          "font-body text-[12px] font-medium uppercase tracking-[0.1em]",
           "transition-colors duration-150",
           open ? "text-primary" : "text-fg-2 hover:text-primary",
         )}
@@ -102,7 +102,7 @@ function GroupDropdown({
                   >
                     {item.icon}
                   </span>
-                  <span className="font-[family-name:var(--font-body)] text-[13px] font-medium tracking-[0.02em]">
+                  <span className="font-body text-[13px] font-medium tracking-[0.02em]">
                     {item.label}
                   </span>
                 </Link>

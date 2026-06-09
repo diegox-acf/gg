@@ -43,10 +43,10 @@ export function OrderConfirmation() {
         <Check size={30} className="text-success" strokeWidth={2.5} />
       </div>
 
-      <h1 className="font-[family-name:var(--font-display)] text-[28px] font-black uppercase tracking-[0.02em] text-fg-1 sm:text-[32px]">
+      <h1 className="font-display text-[28px] font-black uppercase tracking-[0.02em] text-fg-1 sm:text-[32px]">
         Order Confirmed
       </h1>
-      <p className="mx-auto mt-2.5 max-w-[42ch] font-[family-name:var(--font-body)] text-[14px] leading-[1.6] text-fg-2">
+      <p className="mx-auto mt-2.5 max-w-[42ch] font-body text-[14px] leading-[1.6] text-fg-2">
         Thanks! Your order has been placed. We&apos;ll send a confirmation to{" "}
         <span className="text-fg-1">{order.email}</span> shortly.
       </p>
@@ -56,7 +56,7 @@ export function OrderConfirmation() {
           {
             k: "Order Number",
             v: (
-              <span className="font-[family-name:var(--font-mono)] font-semibold text-primary">
+              <span className="font-mono font-semibold text-primary">
                 {order.number}
               </span>
             ),
@@ -72,16 +72,16 @@ export function OrderConfirmation() {
             key={row.k}
             className="flex items-center justify-between border-b border-border py-2.5 last:border-b-0"
           >
-            <span className="font-[family-name:var(--font-body)] text-[12px] uppercase tracking-[0.06em] text-fg-3">
+            <span className="font-body text-[12px] uppercase tracking-[0.06em] text-fg-3">
               {row.k}
             </span>
-            <span className="font-[family-name:var(--font-body)] text-[13px] text-fg-1">
+            <span className="font-body text-[13px] text-fg-1">
               {row.v}
             </span>
           </div>
         ))}
         <div className="flex items-center justify-between border-t border-border py-2.5 pt-3">
-          <span className="font-[family-name:var(--font-body)] text-[12px] uppercase tracking-[0.06em] text-fg-3">
+          <span className="font-body text-[12px] uppercase tracking-[0.06em] text-fg-3">
             Status
           </span>
           <Badge variant="confirmed" />

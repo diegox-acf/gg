@@ -17,7 +17,7 @@ export default function CheckoutPage() {
         {/* Breadcrumb */}
         <nav
           aria-label="Breadcrumb"
-          className="mb-7 flex items-center gap-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.08em] text-fg-3"
+          className="mb-7 flex items-center gap-1.5 font-body text-[11px] uppercase tracking-[0.08em] text-fg-3"
         >
           <Link href="/" className="transition-colors hover:text-fg-1">
             Home
@@ -26,7 +26,7 @@ export default function CheckoutPage() {
           <span className="text-fg-1">Checkout</span>
         </nav>
 
-        <h1 className="mb-8 font-[family-name:var(--font-display)] text-[26px] font-black uppercase tracking-[-0.01em] text-fg-1 sm:text-[30px]">
+        <h1 className="mb-8 font-display text-[26px] font-black uppercase tracking-[-0.01em] text-fg-1 sm:text-[30px]">
           Checkout
         </h1>
 

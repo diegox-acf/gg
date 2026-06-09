@@ -56,7 +56,7 @@ export function Button({
       disabled={disabled || loading}
       className={cn(
         "relative inline-flex items-center justify-center gap-2",
-        "font-[family-name:var(--font-display)] font-bold uppercase tracking-[0.1em]",
+        "font-display font-bold uppercase tracking-[0.1em]",
         "transition-all duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
         "cursor-pointer select-none",
         "disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none",
@@ -90,7 +90,7 @@ export function buttonVariants({
 } = {}) {
   return cn(
     "inline-flex items-center justify-center gap-2",
-    "font-[family-name:var(--font-display)] font-bold uppercase tracking-[0.1em]",
+    "font-display font-bold uppercase tracking-[0.1em]",
     "transition-all duration-[180ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
     "cursor-pointer select-none no-underline",
     variantClasses[variant],
