@@ -95,7 +95,7 @@ Brand, color tokens, typography, and component guidelines are documented in:
 - [`../gg-docs/08-design-system.md`](../gg-docs/08-design-system.md) — canonical token summary
 
 Primary font: **Orbitron** (display/brand) + **Roboto** (body) + **Roboto Mono** (specs/codes).
-Primary accent: `#ff3500`.
+Primary accent: `#d4ff00`.
 
 ## Related Repositories
 

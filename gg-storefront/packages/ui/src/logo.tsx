@@ -51,7 +51,7 @@ export function Logo({ size = "nav", className }: LogoProps) {
           s.clipClass,
           s.blockClass,
           "bg-primary text-fg-inverse",
-          "font-[family-name:var(--font-display)] font-black uppercase leading-none tracking-[0.12em]",
+          "font-display font-black uppercase leading-none tracking-[0.12em]",
           s.blockFont,
         )}
       >
@@ -61,7 +61,7 @@ export function Logo({ size = "nav", className }: LogoProps) {
       {/* GAMING wordmark */}
       <span
         className={cn(
-          "font-[family-name:var(--font-body)] font-medium uppercase text-fg-1",
+          "font-body font-medium uppercase text-fg-1",
           s.wordmarkFont,
           s.wordmarkTracking,
         )}

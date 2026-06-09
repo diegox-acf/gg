@@ -56,7 +56,7 @@ export function LoginForm() {
       {error && (
         <p
           role="alert"
-          className="border border-danger bg-danger/10 px-3 py-2 font-[family-name:var(--font-body)] text-[12px] text-danger"
+          className="border border-danger bg-danger/10 px-3 py-2 font-body text-[12px] text-danger"
         >
           {error}
         </p>
@@ -66,7 +66,7 @@ export function LoginForm() {
         Sign in
       </Button>
 
-      <p className="text-center font-[family-name:var(--font-body)] text-[12px] text-fg-3">
+      <p className="text-center font-body text-[12px] text-fg-3">
         No account?{" "}
         <Link href="/register" className="text-primary hover:underline">
           Create one

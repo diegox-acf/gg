@@ -17,7 +17,7 @@ export default async function AccountPage() {
     <>
       <Nav />
       <main className="mx-auto max-w-[720px] px-4 py-12 sm:px-8">
-        <h1 className="mb-6 font-[family-name:var(--font-display)] text-[24px] font-extrabold uppercase tracking-[0.08em] text-fg-1">
+        <h1 className="mb-6 font-display text-[24px] font-extrabold uppercase tracking-[0.08em] text-fg-1">
           Your account
         </h1>
 
@@ -36,10 +36,10 @@ export default async function AccountPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <>
-      <dt className="bg-surface px-4 py-3 font-[family-name:var(--font-display)] text-[10px] font-semibold uppercase tracking-[0.12em] text-fg-3">
+      <dt className="bg-surface px-4 py-3 font-display text-[10px] font-semibold uppercase tracking-[0.12em] text-fg-3">
         {label}
       </dt>
-      <dd className="bg-surface px-4 py-3 font-[family-name:var(--font-body)] text-[13px] text-fg-1">
+      <dd className="bg-surface px-4 py-3 font-body text-[13px] text-fg-1">
         {value}
       </dd>
     </>

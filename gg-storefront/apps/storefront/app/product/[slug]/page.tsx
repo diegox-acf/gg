@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ChevronRight, Package } from "lucide-react";
@@ -62,7 +63,7 @@ export default async function ProductPage({
         {/* Breadcrumb */}
         <nav
           aria-label="Breadcrumb"
-          className="mb-8 flex flex-wrap items-center gap-1.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.08em] text-fg-3"
+          className="mb-8 flex flex-wrap items-center gap-1.5 font-body text-[11px] uppercase tracking-[0.08em] text-fg-3"
         >
           <Link href="/" className="transition-colors hover:text-fg-1">
             Home
@@ -86,7 +87,7 @@ export default async function ProductPage({
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
           {/* Image panel */}
           <div className="clip-cyber relative flex aspect-square items-center justify-center overflow-hidden border border-border bg-elevated">
-            <span className="absolute right-4 top-3 font-[family-name:var(--font-mono)] text-[10px] tracking-[0.08em] text-fg-3">
+            <span className="absolute right-4 top-3 font-mono text-[10px] tracking-[0.08em] text-fg-3">
               {product.sku}
             </span>
             {/* HUD corners */}
@@ -98,27 +99,40 @@ export default async function ProductPage({
               aria-hidden="true"
               className="absolute bottom-0 right-0 size-6 border-b-2 border-r-2 border-primary"
             />
-            {/* Phase 1: replace with next/image from the Catalog image service */}
-            <Package size={96} className="text-border-strong" />
+            {product.imageUrl ? (
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-contain p-8"
+                priority
+                // Catalog serves these on localhost; Next 16's optimizer blocks
+                // loopback IPs (SSRF guard), so load them directly.
+                unoptimized
+              />
+            ) : (
+              <Package size={96} className="text-border-strong" />
+            )}
           </div>
 
           {/* Info panel */}
           <div className="flex flex-col">
-            <p className="mb-2 font-[family-name:var(--font-body)] text-[11px] font-semibold uppercase tracking-[0.14em] text-fg-3">
+            <p className="mb-2 font-body text-[11px] font-semibold uppercase tracking-[0.14em] text-fg-3">
               {product.brand}
             </p>
-            <h1 className="font-[family-name:var(--font-display)] text-[26px] font-black leading-[1.15] tracking-[-0.01em] text-fg-1 sm:text-[32px]">
+            <h1 className="font-display text-[26px] font-black leading-[1.15] tracking-[-0.01em] text-fg-1 sm:text-[32px]">
               {product.name}
             </h1>
 
             <div className="mt-5 flex items-center gap-4">
-              <span className="font-[family-name:var(--font-display)] text-[30px] font-black tracking-[-0.02em] text-fg-1">
+              <span className="font-display text-[30px] font-black tracking-[-0.02em] text-fg-1">
                 {formatPrice(product.priceCents)}
               </span>
               <Badge variant={product.stockStatus} />
             </div>
 
-            <p className="mt-5 max-w-[55ch] font-[family-name:var(--font-body)] text-[14px] leading-[1.7] text-fg-2">
+            <p className="mt-5 max-w-[55ch] font-body text-[14px] leading-[1.7] text-fg-2">
               {product.description}
             </p>
 
@@ -129,7 +143,7 @@ export default async function ProductPage({
             {/* Specifications — only rendered when the catalog carries specs */}
             {specRows.length > 0 && (
               <section className="mt-8">
-                <h2 className="mb-3 font-[family-name:var(--font-display)] text-[9px] font-semibold uppercase tracking-[0.18em] text-fg-3">
+                <h2 className="mb-3 font-display text-[9px] font-semibold uppercase tracking-[0.18em] text-fg-3">
                   Specifications
                 </h2>
                 <dl className="flex flex-col gap-px overflow-hidden border border-border bg-border">
@@ -138,10 +152,10 @@ export default async function ProductPage({
                       key={label}
                       className="flex items-center justify-between gap-4 bg-surface px-4 py-3"
                     >
-                      <dt className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.1em] text-fg-3">
+                      <dt className="font-body text-[11px] uppercase tracking-[0.1em] text-fg-3">
                         {label}
                       </dt>
-                      <dd className="text-right font-[family-name:var(--font-mono)] text-[13px] text-fg-1">
+                      <dd className="text-right font-mono text-[13px] text-fg-1">
                         {value}
                       </dd>
                     </div>
@@ -157,14 +171,14 @@ export default async function ProductPage({
                   key={row.label}
                   className="flex items-center justify-between bg-surface px-4 py-3"
                 >
-                  <dt className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.1em] text-fg-3">
+                  <dt className="font-body text-[11px] uppercase tracking-[0.1em] text-fg-3">
                     {row.label}
                   </dt>
                   <dd
                     className={
                       row.mono
-                        ? "font-[family-name:var(--font-mono)] text-[13px] text-fg-1"
-                        : "font-[family-name:var(--font-body)] text-[13px] font-medium text-fg-1"
+                        ? "font-mono text-[13px] text-fg-1"
+                        : "font-body text-[13px] font-medium text-fg-1"
                     }
                   >
                     {row.value}
@@ -178,7 +192,7 @@ export default async function ProductPage({
         {/* Related products */}
         {related.length > 0 && (
           <section className="mt-20">
-            <h2 className="mb-6 font-[family-name:var(--font-display)] text-[9px] font-semibold uppercase tracking-[0.18em] text-fg-3">
+            <h2 className="mb-6 font-display text-[9px] font-semibold uppercase tracking-[0.18em] text-fg-3">
               More in {category?.name ?? "this category"}
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

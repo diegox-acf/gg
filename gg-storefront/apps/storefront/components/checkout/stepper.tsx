@@ -59,7 +59,7 @@ function Indicator() {
               <span
                 className={cn(
                   "clip-cyber-xs flex size-7 items-center justify-center border",
-                  "font-[family-name:var(--font-display)] text-[10px] font-extrabold",
+                  "font-display text-[10px] font-extrabold",
                   done || active
                     ? "border-primary bg-primary text-fg-inverse"
                     : "border-border-strong bg-transparent text-fg-2",
@@ -69,7 +69,7 @@ function Indicator() {
               </span>
               <span
                 className={cn(
-                  "hidden font-[family-name:var(--font-display)] text-[11px] font-semibold uppercase tracking-[0.1em] sm:inline",
+                  "hidden font-display text-[11px] font-semibold uppercase tracking-[0.1em] sm:inline",
                   active ? "text-fg-1" : "text-fg-3",
                 )}
               >

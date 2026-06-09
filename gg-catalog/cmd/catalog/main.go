@@ -29,19 +29,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := observability.NewLogger(cfg.LogLevel)
-	slog.SetDefault(logger)
-
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
+	// Init OTel first so the global LoggerProvider exists before NewLogger wires
+	// the slog → OTLP bridge.
 	shutdown, err := observability.InitOTel(ctx,
 		cfg.OTELEndpoint, cfg.ServiceName, cfg.ServiceVersion, cfg.Environment,
 	)
 	if err != nil {
-		logger.Error("otel init failed", "err", err)
+		slog.Error("otel init failed", "err", err)
 		os.Exit(1)
 	}
+
+	logger := observability.NewLogger(cfg.LogLevel)
+	slog.SetDefault(logger)
+
 	defer func() {
 		if err := shutdown(context.Background()); err != nil {
 			logger.Error("otel shutdown error", "err", err)

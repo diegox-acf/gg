@@ -56,7 +56,8 @@ func (s *Store) PublicURL(key string) string {
 }
 
 // FileHandler returns an http.Handler that serves images from the local directory.
-// Mount it at /images in the chi router.
+// Mount it at /images in the chi router. StripPrefix removes the mount path so the
+// key "case1.webp" maps to <dir>/case1.webp (not <dir>/images/case1.webp).
 func (s *Store) FileHandler() http.Handler {
-	return http.FileServer(http.Dir(s.dir))
+	return http.StripPrefix("/images", http.FileServer(http.Dir(s.dir)))
 }

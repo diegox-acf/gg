@@ -23,6 +23,7 @@ export interface CatalogProduct {
   currency: string;
   specs: unknown;
   stock_status: CatalogStockStatus;
+  image_url?: string;
   created_at: string;
   updated_at: string;
 }

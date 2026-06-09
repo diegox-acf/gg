@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { IconBtn } from "./icon-btn";
+import { CATEGORY_GROUPS } from "./nav-items";
 import { AppearanceMenu } from "../theme/appearance-menu";
 import { AppearanceControls } from "../theme/appearance-controls";
 import { useCart } from "@/components/cart/cart-provider";
@@ -15,14 +16,6 @@ interface Account {
   name: string | null;
   email: string | null;
 }
-
-const NAV_ITEMS = [
-  { label: "GPUs", href: "/category/gpus" },
-  { label: "CPUs", href: "/category/cpus" },
-  { label: "Peripherals", href: "/category/peripherals" },
-  { label: "Storage", href: "/category/storage" },
-  { label: "Cases", href: "/category/cases" },
-];
 
 export function NavClient({ account }: { account: Account | null }) {
   const router = useRouter();
@@ -68,19 +61,19 @@ export function NavClient({ account }: { account: Account | null }) {
 
           {account && accountOpen && (
             <div className="absolute right-0 top-[44px] z-[200] w-52 border border-border bg-surface py-1 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
-              <div className="truncate border-b border-border px-4 py-2 font-[family-name:var(--font-body)] text-[11px] text-fg-3">
+              <div className="truncate border-b border-border px-4 py-2 font-body text-[11px] text-fg-3">
                 {account.name || account.email}
               </div>
               <Link
                 href="/account"
                 onClick={() => setAccountOpen(false)}
-                className="block px-4 py-2 font-[family-name:var(--font-body)] text-[13px] text-fg-1 hover:bg-primary-muted hover:text-primary"
+                className="block px-4 py-2 font-body text-[13px] text-fg-1 hover:bg-primary-muted hover:text-primary"
               >
                 Account
               </Link>
               <button
                 onClick={() => signOut({ redirectTo: "/" })}
-                className="block w-full px-4 py-2 text-left font-[family-name:var(--font-body)] text-[13px] text-fg-1 hover:bg-primary-muted hover:text-primary"
+                className="block w-full px-4 py-2 text-left font-body text-[13px] text-fg-1 hover:bg-primary-muted hover:text-primary"
               >
                 Sign out
               </button>
@@ -116,16 +109,29 @@ export function NavClient({ account }: { account: Account | null }) {
 
       {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div className="absolute left-0 right-0 top-[60px] z-[200] animate-[slideDown_200ms_ease_both] border-b border-border bg-surface px-8 py-4 md:hidden">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMenuOpen(false)}
-              className="block border-b border-border py-[10px] font-[family-name:var(--font-body)] text-[14px] font-medium uppercase tracking-[0.06em] text-fg-1 last:border-b-0 hover:text-primary"
-            >
-              {item.label}
-            </Link>
+        <div className="absolute left-0 right-0 top-[60px] z-[200] max-h-[calc(100vh-60px)] animate-[slideDown_200ms_ease_both] overflow-y-auto border-b border-border bg-surface px-8 py-4 md:hidden">
+          {CATEGORY_GROUPS.map((group) => (
+            <div key={group.title} className="mb-3">
+              <div className="mb-1 mt-2 flex items-center gap-2">
+                <span className="h-[10px] w-[3px] bg-primary" aria-hidden="true" />
+                <h3 className="font-display text-[10px] font-semibold uppercase tracking-[0.14em] text-fg-3">
+                  {group.title}
+                </h3>
+              </div>
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 py-[9px] font-body text-[14px] font-medium tracking-[0.04em] text-fg-1 hover:text-primary"
+                >
+                  <span aria-hidden="true" className="w-4 text-center text-fg-3">
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           ))}
 
           {/* Appearance controls for mobile (popover trigger is hidden below sm) */}

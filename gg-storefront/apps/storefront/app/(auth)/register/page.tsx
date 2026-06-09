@@ -12,10 +12,10 @@ export default async function RegisterPage() {
 
   return (
     <div>
-      <h1 className="mb-1 font-[family-name:var(--font-display)] text-[20px] font-extrabold uppercase tracking-[0.08em] text-fg-1">
+      <h1 className="mb-1 font-display text-[20px] font-extrabold uppercase tracking-[0.08em] text-fg-1">
         Create account
       </h1>
-      <p className="mb-6 font-[family-name:var(--font-body)] text-[12px] text-fg-3">
+      <p className="mb-6 font-body text-[12px] text-fg-3">
         Join GG Gaming. Max FPS. Zero compromise.
       </p>
       <Suspense>

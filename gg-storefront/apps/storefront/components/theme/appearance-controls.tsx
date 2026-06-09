@@ -15,7 +15,7 @@ import {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-2.5 font-[family-name:var(--font-display)] text-[9px] font-semibold uppercase tracking-[0.15em] text-fg-3">
+    <p className="mb-2.5 font-display text-[9px] font-semibold uppercase tracking-[0.15em] text-fg-3">
       {children}
     </p>
   );
@@ -45,14 +45,14 @@ export function AppearanceControls() {
       {/* Accent */}
       <div>
         <div className="mb-2.5 flex items-center justify-between">
-          <span className="font-[family-name:var(--font-display)] text-[9px] font-semibold uppercase tracking-[0.15em] text-fg-3">
+          <span className="font-display text-[9px] font-semibold uppercase tracking-[0.15em] text-fg-3">
             Accent
           </span>
           {!isDefaultAccent(accent) && (
             <button
               type="button"
               onClick={() => setAccent(DEFAULT_ACCENT)}
-              className="flex items-center gap-1 font-[family-name:var(--font-body)] text-[10px] uppercase tracking-[0.08em] text-fg-3 transition-colors hover:text-fg-1"
+              className="flex items-center gap-1 font-body text-[10px] uppercase tracking-[0.08em] text-fg-3 transition-colors hover:text-fg-1"
             >
               <RotateCcw size={11} /> Reset
             </button>
@@ -98,8 +98,8 @@ export function AppearanceControls() {
           }}
           spellCheck={false}
           aria-label="Custom accent hex color"
-          placeholder="#ff3500"
-          className="clip-cyber-input mt-2.5 w-full border border-border bg-elevated px-3 py-2 font-[family-name:var(--font-mono)] text-[12px] text-fg-1 outline-none transition-colors duration-150 focus:border-primary"
+          placeholder="#d4ff00"
+          className="clip-cyber-input mt-2.5 w-full border border-border bg-elevated px-3 py-2 font-mono text-[12px] text-fg-1 outline-none transition-colors duration-150 focus:border-primary"
         />
       </div>
     </div>

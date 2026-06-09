@@ -95,12 +95,12 @@ export function HomeHero({ drops }: { drops: MockProduct[] }) {
         <div>
           <div className="mb-5 flex items-center gap-3">
             <span className="h-px w-6 bg-primary" />
-            <span className="font-[family-name:var(--font-display)] text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+            <span className="font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
               Gaming Hardware / Est. 2026
             </span>
           </div>
 
-          <h1 className="hero-glitch font-[family-name:var(--font-display)] text-[clamp(40px,7vw,84px)] font-black uppercase leading-[0.95] tracking-[-0.02em] text-fg-1">
+          <h1 className="hero-glitch font-display text-[clamp(40px,7vw,84px)] font-black uppercase leading-[0.95] tracking-[-0.02em] text-fg-1">
             Max FPS.
             <br />
             <span
@@ -116,7 +116,7 @@ export function HomeHero({ drops }: { drops: MockProduct[] }) {
             Compromise.
           </h1>
 
-          <p className="mt-5 max-w-[440px] font-[family-name:var(--font-body)] text-[15px] leading-[1.7] text-fg-2">
+          <p className="mt-5 max-w-[440px] font-body text-[15px] leading-[1.7] text-fg-2">
             Gaming PC hardware for enthusiasts who demand the best. GPUs, CPUs,
             peripherals — everything your next build needs.
           </p>
@@ -132,7 +132,7 @@ export function HomeHero({ drops }: { drops: MockProduct[] }) {
                   "polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%)",
               }}
             >
-              <span className="font-[family-name:var(--font-display)] text-[13px] font-black uppercase leading-[1.1] tracking-[0.04em]">
+              <span className="font-display text-[13px] font-black uppercase leading-[1.1] tracking-[0.04em]">
                 Shop
                 <br />
                 Now
@@ -156,10 +156,10 @@ export function HomeHero({ drops }: { drops: MockProduct[] }) {
           <div className="mt-10 flex flex-wrap gap-8 border-t border-border pt-6">
             {STATS.map(([value, label]) => (
               <div key={label}>
-                <div className="font-[family-name:var(--font-display)] text-[20px] font-extrabold tracking-[-0.02em] text-primary">
+                <div className="font-display text-[20px] font-extrabold tracking-[-0.02em] text-primary">
                   {value}
                 </div>
-                <div className="mt-0.5 font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.1em] text-fg-3">
+                <div className="mt-0.5 font-body text-[11px] uppercase tracking-[0.1em] text-fg-3">
                   {label}
                 </div>
               </div>
@@ -206,10 +206,10 @@ export function HomeHero({ drops }: { drops: MockProduct[] }) {
             {/* HUD corners */}
             <span className="absolute left-2.5 top-2.5 size-3.5 border-l-[1.5px] border-t-[1.5px] border-primary" />
             <span className="absolute bottom-2.5 right-2.5 size-3.5 border-b-[1.5px] border-r-[1.5px] border-primary" />
-            <span className="absolute bottom-2.5 left-2.5 font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.2em] text-primary">
+            <span className="absolute bottom-2.5 left-2.5 font-display text-[9px] uppercase tracking-[0.2em] text-primary">
               ▼ Featured Rig
             </span>
-            <span className="absolute right-2.5 top-2 font-[family-name:var(--font-mono)] text-[9px] text-fg-1 opacity-80">
+            <span className="absolute right-2.5 top-2 font-mono text-[9px] text-fg-1 opacity-80">
               REC ●
             </span>
           </div>
@@ -223,7 +223,7 @@ export function HomeHero({ drops }: { drops: MockProduct[] }) {
                 "polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%)",
             }}
           >
-            <p className="mb-2.5 font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.15em] text-primary">
+            <p className="mb-2.5 font-display text-[9px] uppercase tracking-[0.15em] text-primary">
               Featured Drop
             </p>
             {drops.map((p) => (
@@ -232,10 +232,10 @@ export function HomeHero({ drops }: { drops: MockProduct[] }) {
                 href={`/product/${p.slug}`}
                 className="group flex items-center justify-between gap-2 border-b border-border py-[7px] last:border-b-0"
               >
-                <span className="line-clamp-1 flex-1 font-[family-name:var(--font-body)] text-[11px] text-fg-2 transition-colors group-hover:text-primary">
+                <span className="line-clamp-1 flex-1 font-body text-[11px] text-fg-2 transition-colors group-hover:text-primary">
                   {p.name}
                 </span>
-                <span className="whitespace-nowrap font-[family-name:var(--font-display)] text-[11px] font-bold text-fg-1">
+                <span className="whitespace-nowrap font-display text-[11px] font-bold text-fg-1">
                   {formatPrice(p.priceCents)}
                 </span>
               </Link>

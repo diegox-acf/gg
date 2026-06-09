@@ -38,7 +38,7 @@ export function ProductBuyPanel({ product }: ProductBuyPanelProps) {
     <div className="flex flex-col gap-4">
       {/* Quantity stepper */}
       <div className="flex items-center gap-3">
-        <span className="font-[family-name:var(--font-body)] text-[11px] uppercase tracking-[0.1em] text-fg-3">
+        <span className="font-body text-[11px] uppercase tracking-[0.1em] text-fg-3">
           Qty
         </span>
         <div className="clip-cyber-xs flex items-center border border-border bg-surface">
@@ -53,7 +53,7 @@ export function ProductBuyPanel({ product }: ProductBuyPanelProps) {
           </button>
           <span
             aria-live="polite"
-            className="min-w-9 text-center font-[family-name:var(--font-mono)] text-[14px] font-medium text-fg-1"
+            className="min-w-9 text-center font-mono text-[14px] font-medium text-fg-1"
           >
             {qty}
           </span>
@@ -76,7 +76,7 @@ export function ProductBuyPanel({ product }: ProductBuyPanelProps) {
         onClick={handleAdd}
         className={cn(
           "clip-cyber-btn flex items-center justify-center gap-2 px-6 py-[14px]",
-          "font-[family-name:var(--font-display)] text-[12px] font-bold uppercase tracking-[0.12em]",
+          "font-display text-[12px] font-bold uppercase tracking-[0.12em]",
           "border-none transition-all duration-150",
           isOOS
             ? "cursor-not-allowed bg-border text-fg-3"

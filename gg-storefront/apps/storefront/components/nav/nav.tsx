@@ -1,16 +1,8 @@
 import Link from "next/link";
 import { Logo } from "@gg/ui";
 import { auth } from "@/auth";
-import { NavLink } from "./nav-link";
 import { NavClient } from "./nav-client";
-
-const NAV_ITEMS = [
-  { label: "GPUs", href: "/category/gpus" },
-  { label: "CPUs", href: "/category/cpus" },
-  { label: "Peripherals", href: "/category/peripherals" },
-  { label: "Storage", href: "/category/storage" },
-  { label: "Cases", href: "/category/cases" },
-];
+import { CategoryNav } from "./category-nav";
 
 export async function Nav() {
   const session = await auth();
@@ -28,13 +20,9 @@ export async function Nav() {
         <Logo size="nav" />
       </Link>
 
-      {/* Desktop nav links — centered */}
-      <div className="hidden flex-1 items-center justify-center gap-8 md:flex">
-        {NAV_ITEMS.map((item) => (
-          <NavLink key={item.href} href={item.href}>
-            {item.label}
-          </NavLink>
-        ))}
+      {/* Desktop: one dropdown per category group, centered across the bar */}
+      <div className="hidden flex-1 items-center justify-center md:flex">
+        <CategoryNav />
       </div>
 
       {/* Right side — Client Component handles cart, account, mobile menu */}

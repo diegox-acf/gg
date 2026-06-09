@@ -86,7 +86,7 @@ export function RegisterForm() {
       {error && (
         <p
           role="alert"
-          className="border border-danger bg-danger/10 px-3 py-2 font-[family-name:var(--font-body)] text-[12px] text-danger"
+          className="border border-danger bg-danger/10 px-3 py-2 font-body text-[12px] text-danger"
         >
           {error}
         </p>
@@ -96,7 +96,7 @@ export function RegisterForm() {
         Create account
       </Button>
 
-      <p className="text-center font-[family-name:var(--font-body)] text-[12px] text-fg-3">
+      <p className="text-center font-body text-[12px] text-fg-3">
         Already have an account?{" "}
         <Link href="/login" className="text-primary hover:underline">
           Sign in

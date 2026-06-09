@@ -25,6 +25,7 @@ export function mapProduct(p: CatalogProduct): MockProduct {
     priceCents: p.price_cents,
     stockStatus: p.stock_status as StockStatus,
     specs: normalizeSpecs(p.specs),
+    imageUrl: p.image_url || undefined,
   };
 }
 

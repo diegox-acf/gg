@@ -46,7 +46,7 @@ const EMPTY_SHIPPING: Shipping = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-5 font-[family-name:var(--font-display)] text-[10px] font-semibold uppercase tracking-[0.15em] text-fg-3">
+    <p className="mb-5 font-display text-[10px] font-semibold uppercase tracking-[0.15em] text-fg-3">
       {children}
     </p>
   );
@@ -132,10 +132,10 @@ export function CheckoutFlow() {
   if (items.length === 0 && !placing) {
     return (
       <div className="flex flex-col items-center gap-4 border border-dashed border-border bg-surface/40 px-6 py-20 text-center">
-        <p className="font-[family-name:var(--font-display)] text-[15px] font-bold uppercase tracking-[0.08em] text-fg-1">
+        <p className="font-display text-[15px] font-bold uppercase tracking-[0.08em] text-fg-1">
           Your cart is empty
         </p>
-        <p className="font-[family-name:var(--font-body)] text-[13px] text-fg-2">
+        <p className="font-body text-[13px] text-fg-2">
           Add some gear before checking out.
         </p>
         <Link href="/" className="mt-1">
@@ -254,19 +254,19 @@ export function CheckoutFlow() {
                     className="flex items-center gap-4 border-b border-border py-3 last:border-b-0"
                   >
                     <div className="flex size-[52px] flex-shrink-0 items-center justify-center bg-elevated">
-                      <span className="font-[family-name:var(--font-mono)] text-[8px] text-fg-3">
+                      <span className="font-mono text-[8px] text-fg-3">
                         {item.sku}
                       </span>
                     </div>
                     <div className="flex-1">
-                      <p className="font-[family-name:var(--font-body)] text-[13px] font-medium text-fg-1">
+                      <p className="font-body text-[13px] font-medium text-fg-1">
                         {item.name}
                       </p>
-                      <p className="mt-0.5 font-[family-name:var(--font-body)] text-[12px] text-fg-3">
+                      <p className="mt-0.5 font-body text-[12px] text-fg-3">
                         Qty: {item.qty}
                       </p>
                     </div>
-                    <span className="font-[family-name:var(--font-display)] text-[14px] font-extrabold text-fg-1">
+                    <span className="font-display text-[14px] font-extrabold text-fg-1">
                       {formatPrice(item.priceCents * item.qty)}
                     </span>
                   </li>
@@ -274,10 +274,10 @@ export function CheckoutFlow() {
               </ul>
 
               <div className="mt-5 border border-border bg-elevated p-4">
-                <p className="mb-1.5 font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.15em] text-primary">
+                <p className="mb-1.5 font-display text-[9px] uppercase tracking-[0.15em] text-primary">
                   Ship To
                 </p>
-                <p className="font-[family-name:var(--font-body)] text-[13px] text-fg-2">
+                <p className="font-body text-[13px] text-fg-2">
                   {shipTo || "—"}
                 </p>
               </div>
@@ -296,7 +296,7 @@ export function CheckoutFlow() {
             <Stepper.Panel index={2}>
               <SectionLabel>Payment</SectionLabel>
               <div className="clip-cyber-sm border border-border bg-elevated p-5">
-                <p className="mb-4 flex items-center gap-2 font-[family-name:var(--font-display)] text-[9px] uppercase tracking-[0.15em] text-primary">
+                <p className="mb-4 flex items-center gap-2 font-display text-[9px] uppercase tracking-[0.15em] text-primary">
                   <Lock size={11} /> Secure Payment · Test Mode
                 </p>
                 <div className="grid gap-4">
@@ -353,7 +353,7 @@ export function CheckoutFlow() {
           {items.map((item) => (
             <li
               key={item.id}
-              className="mb-2.5 flex justify-between gap-2 font-[family-name:var(--font-body)] text-[12px]"
+              className="mb-2.5 flex justify-between gap-2 font-body text-[12px]"
             >
               <span className="text-fg-2">
                 {item.name} <span className="text-fg-3">×{item.qty}</span>
@@ -373,17 +373,17 @@ export function CheckoutFlow() {
           ].map(([label, value]) => (
             <div
               key={label}
-              className="mb-2 flex justify-between font-[family-name:var(--font-body)] text-[12px] text-fg-2"
+              className="mb-2 flex justify-between font-body text-[12px] text-fg-2"
             >
               <span>{label}</span>
               <span className="text-fg-1">{formatPrice(value as number)}</span>
             </div>
           ))}
           <div className="mt-3 flex justify-between border-t border-border pt-3">
-            <span className="font-[family-name:var(--font-display)] text-[15px] font-extrabold text-fg-1">
+            <span className="font-display text-[15px] font-extrabold text-fg-1">
               Total
             </span>
-            <span className="font-[family-name:var(--font-display)] text-[16px] font-black text-primary">
+            <span className="font-display text-[16px] font-black text-primary">
               {formatPrice(totalCents)}
             </span>
           </div>
