@@ -4,4 +4,3 @@ gen/
 *.exe
 .env
 .env.local
-go.sum

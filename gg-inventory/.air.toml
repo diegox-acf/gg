@@ -1,0 +1,16 @@
+[build]
+  cmd         = "go build -o ./tmp/inventory.exe ./cmd/inventory"
+  entrypoint  = "./tmp/inventory.exe"
+  include_ext = ["go", "toml", "sql"]
+  exclude_dir = ["migrations", "tmp", "vendor", "bin"]
+  delay       = 500
+  rerun       = false
+
+[log]
+  time = true
+
+[color]
+  build   = "yellow"
+  runner  = "green"
+  watcher = "cyan"
+  app     = ""
