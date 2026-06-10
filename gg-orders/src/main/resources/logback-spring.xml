@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+      Structured JSON logs to stdout for Loki. The OpenTelemetry Java agent
+      injects trace_id/span_id into the MDC (OTEL_INSTRUMENTATION_LOGBACK_MDC),
+      and application code adds order_id via MDC.put — both surface as JSON fields.
+    -->
+    <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>trace_id</includeMdcKeyName>
+            <includeMdcKeyName>span_id</includeMdcKeyName>
+            <includeMdcKeyName>order_id</includeMdcKeyName>
+            <customFields>{"service":"gg-orders"}</customFields>
+        </encoder>
+    </appender>
+
+    <!-- Human-readable console for local `bootRun`; JSON only when containerized. -->
+    <springProfile name="!local">
+        <root level="INFO">
+            <appender-ref ref="json"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="local">
+        <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    </springProfile>
+</configuration>

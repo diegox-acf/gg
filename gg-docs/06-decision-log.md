@@ -497,3 +497,67 @@ Realm shape:
   UX. We use custom branded login/registration forms in the storefront (Auth.js Credentials
   provider + password grant) so the auth experience matches the GG design system. The hosted
   Account console remains available for admin use.
+
+---
+
+## ADR-018: Orchestrated saga with synchronous stock reservation
+
+**Status:** Accepted
+**Date:** 2026-06-09
+
+**Context:**
+Phase 3 implements checkout as a distributed saga across Orders, Inventory, and Stripe.
+The docs disagreed on *how stock is reserved*. The UC-05 sequence diagram
+(`02-business-logic.md`) and the "saga orchestrator" framing (`03-architecture.md`) show
+Orders calling Inventory **synchronously** to reserve stock and deciding the next step on
+the response. But the Kafka topic tables (`03-architecture.md`, `09-data-model.md`) list
+`inventory.stock-reserved` / `inventory.stock-released` topics, which read as an
+**event-driven (choreographed)** reservation. A reservation is a request that needs an
+immediate yes/no answer before taking the customer's money — making it fire-and-forget over
+Kafka forces the order to block on an async round-trip and complicates compensation. This
+ambiguity needed to be resolved before building Orders (Milestone B) and the event backbone
+(Milestone C). ADR-016 already removed gRPC in favour of REST for service-to-service calls.
+
+**Decision:**
+Use an **orchestration** saga (not choreography), with the **Orders service as the
+orchestrator**, and reserve stock via a **synchronous REST** call:
+
+- **Reserve = synchronous REST.** Orders calls Inventory `POST /v1/reservations` and branches
+  on the HTTP response (201 reserved → proceed to payment; 409 insufficient stock → fail the
+  order, no payment attempted). No Kafka in the reserve step.
+- **Terminal outcomes = Kafka events.** Only the *committed* outcome is asynchronous: on
+  payment success Orders emits `OrderConfirmed`; on failure/decline/timeout it emits
+  `OrderFailed`. Inventory consumes these and **commits** (drops the reservation, stock stays
+  decremented) or **releases** (returns stock to available) the existing reservation.
+- **Inventory `Stock*` events are notifications, not control flow.** `inventory.stock-reserved`
+  / `stock-released` remain as outbox/Kafka domain events for observability and any future
+  consumers, but no saga step waits on them.
+- The orchestrator drives an explicit state machine
+  `PENDING → RESERVING → PAYING → CONFIRMED | FAILED`, with compensation on each branch
+  (reserved-but-not-paid → release; never charge without a reservation).
+
+**Consequences:**
+- Reservation gives an immediate, strongly-consistent answer — the customer is told about an
+  out-of-stock item before any payment is attempted (roadmap criterion 3).
+- The orchestrator centralizes the saga logic and compensations in one service (Orders),
+  which is easier to reason about and recover than distributed choreography — at the cost of
+  Orders being a coordination hub (acceptable; it already owns the order lifecycle).
+- Two transports by design: **REST for the request/response reserve**, **Kafka for terminal
+  commit/release**. Trace context must propagate over *both* HTTP headers and Kafka headers
+  for a single connected trace.
+- The `inventory.stock-*` topics stay in the schema but are not on the critical path; this is
+  intentional, not dead code.
+
+**Alternatives considered:**
+- **Choreographed/event-driven reservation** (Orders publishes `OrderPlaced`, Inventory
+  reserves and publishes `StockReserved`/`StockRejected`, Orders reacts): Rejected. Adds an
+  async round-trip to a step that needs a synchronous yes/no, blocks checkout on Kafka
+  latency, and scatters the saga decision logic across services. Contradicts the UC-05
+  sequence diagram.
+- **Two-phase commit / distributed transaction across Orders+Inventory+Stripe:** Rejected.
+  No XA across HTTP/Stripe; the saga pattern with compensations is the established approach
+  and the explicit learning goal.
+- **Reserve synchronously *and* commit/release synchronously** (no Kafka at all): Rejected.
+  The terminal commit/release must survive Orders crashing mid-flight; routing them through
+  the transactional outbox + Kafka gives at-least-once delivery and recovery, which a direct
+  synchronous call after payment would not.
