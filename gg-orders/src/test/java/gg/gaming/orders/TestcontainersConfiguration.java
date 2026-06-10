@@ -11,7 +11,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * every {@code @SpringBootTest}.
  */
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
   @Bean
   @ServiceConnection
