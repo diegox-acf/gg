@@ -2,6 +2,7 @@ package gg.gaming.orders.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -16,12 +17,16 @@ import gg.gaming.orders.outbox.OutboxEvent;
 import gg.gaming.orders.outbox.OutboxRepository;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -30,10 +35,23 @@ class OrderServiceTest {
   @Mock private OutboxRepository outbox;
   @Mock private CatalogClient catalog;
   @Mock private OrderNumberGenerator orderNumbers;
+  @Mock private PlatformTransactionManager txManager;
+
+  @BeforeEach
+  void txManagerRunsCallback() {
+    // TransactionTemplate just runs the callback; commit/rollback are no-ops on the mock.
+    lenient().when(txManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+  }
 
   private OrderService newService() {
     return new OrderService(
-        orders, outbox, catalog, orderNumbers, new OrderProperties(800, 999), new ObjectMapper());
+        orders,
+        outbox,
+        catalog,
+        orderNumbers,
+        new OrderProperties(800, 999),
+        new ObjectMapper(),
+        txManager);
   }
 
   private static CreateOrderCommand command(List<CreateOrderCommand.Item> items, String key) {
@@ -97,6 +115,25 @@ class OrderServiceTest {
     verifyNoInteractions(catalog);
     verifyNoInteractions(outbox);
     verify(orders, never()).saveAndFlush(any());
+  }
+
+  @Test
+  void recoversFromConcurrentDuplicateByReturningWinnersOrder() {
+    Order winner = new Order("GMR-2026-00042", "user-1", "kRace", "USD");
+    // The up-front check misses (empty), then the insert collides with a concurrent winner;
+    // the recovery read in a fresh transaction finds the committed order.
+    when(orders.findByIdempotencyKey("kRace")).thenReturn(Optional.empty(), Optional.of(winner));
+    when(orderNumbers.next()).thenReturn("GMR-2026-00099");
+    when(catalog.getProduct(1)).thenReturn(new CatalogProduct(1, "SKU-1", "GPU", 10_000, "USD"));
+    when(orders.saveAndFlush(any(Order.class)))
+        .thenThrow(new DataIntegrityViolationException("duplicate idempotency_key"));
+
+    Order result =
+        newService().createOrder(command(List.of(new CreateOrderCommand.Item(1, 1)), "kRace"));
+
+    assertThat(result).isSameAs(winner);
+    // The losing transaction rolled back before the outbox write.
+    verify(outbox, never()).save(any());
   }
 
   @Test

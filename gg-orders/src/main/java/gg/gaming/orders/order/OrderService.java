@@ -19,7 +19,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Creates orders. Prices are re-fetched from Catalog (authoritative) and snapshotted; the order
@@ -39,6 +41,7 @@ public class OrderService {
   private final OrderNumberGenerator orderNumbers;
   private final OrderProperties pricing;
   private final ObjectMapper objectMapper;
+  private final TransactionTemplate txTemplate;
 
   OrderService(
       OrderRepository orders,
@@ -46,22 +49,52 @@ public class OrderService {
       CatalogClient catalog,
       OrderNumberGenerator orderNumbers,
       OrderProperties pricing,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      PlatformTransactionManager txManager) {
     this.orders = orders;
     this.outbox = outbox;
     this.catalog = catalog;
     this.orderNumbers = orderNumbers;
     this.pricing = pricing;
     this.objectMapper = objectMapper;
+    this.txTemplate = new TransactionTemplate(txManager);
   }
 
-  @Transactional
+  /**
+   * Creates an order, idempotent on the request key. The persist (order + line items + outbox) runs
+   * in its own transaction. If a concurrent request with the same idempotency key wins the unique
+   * constraint, that transaction is rolled back and we re-resolve the winner's order in a
+   * <strong>fresh</strong> transaction — the failed transaction is marked rollback-only and must
+   * not be reused.
+   */
   public Order createOrder(CreateOrderCommand cmd) {
+    validate(cmd);
+    try {
+      return txTemplate.execute(status -> persist(cmd));
+    } catch (DataIntegrityViolationException race) {
+      // Lost the idempotency-key race; the persist transaction rolled back. The winner's order
+      // is now committed — read it in a new transaction and return it (idempotent result).
+      return txTemplate.execute(
+          status -> orders.findByIdempotencyKey(cmd.idempotencyKey()).orElseThrow(() -> race));
+    }
+  }
+
+  private void validate(CreateOrderCommand cmd) {
     if (cmd.items() == null || cmd.items().isEmpty()) {
       throw new InvalidOrderException("order must contain at least one item");
     }
+    for (CreateOrderCommand.Item item : cmd.items()) {
+      if (item.quantity() <= 0) {
+        throw new InvalidOrderException(
+            "quantity must be positive for product " + item.productId());
+      }
+    }
+  }
 
-    // Idempotent replay: a previous request with the same key returns the same order.
+  /** The transactional unit of work: price, persist the order, append the outbox event. */
+  private Order persist(CreateOrderCommand cmd) {
+    // Fast path for sequential idempotent retries (the concurrent case is handled by the
+    // unique constraint + the recovery read in createOrder).
     var existing = orders.findByIdempotencyKey(cmd.idempotencyKey());
     if (existing.isPresent()) {
       return existing.get();
@@ -74,10 +107,6 @@ public class OrderService {
 
     long subtotal = 0;
     for (CreateOrderCommand.Item item : cmd.items()) {
-      if (item.quantity() <= 0) {
-        throw new InvalidOrderException(
-            "quantity must be positive for product " + item.productId());
-      }
       // Authoritative price — never trust client input.
       CatalogProduct product = catalog.getProduct(item.productId());
       OrderLineItem line =
@@ -90,12 +119,9 @@ public class OrderService {
     long tax = taxCents(subtotal, pricing.taxBps());
     order.setAmounts(subtotal, tax, pricing.shippingCents());
 
-    try {
-      orders.saveAndFlush(order);
-    } catch (DataIntegrityViolationException race) {
-      // Concurrent request with the same idempotency key won the unique constraint.
-      return orders.findByIdempotencyKey(cmd.idempotencyKey()).orElseThrow(() -> race);
-    }
+    // Throws DataIntegrityViolationException if a concurrent request inserted the same
+    // idempotency key first; createOrder recovers from that.
+    orders.saveAndFlush(order);
 
     outbox.save(
         new OutboxEvent(
