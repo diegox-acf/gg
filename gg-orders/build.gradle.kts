@@ -28,6 +28,13 @@ dependencies {
 	implementation("org.flywaydb:flyway-database-postgresql")
 	runtimeOnly("org.postgresql:postgresql")
 
+	// OpenTelemetry API — read the active trace id in app code to stamp outbox rows.
+	// The runtime trace context is supplied by the OTel Java agent (-javaagent); this
+	// is just the compile/link surface. BOM version stays at/below the agent's bundled
+	// API (agent 2.28.x) so we never call a method the agent's SDK doesn't implement.
+	implementation(platform("io.opentelemetry:opentelemetry-bom:1.50.0"))
+	implementation("io.opentelemetry:opentelemetry-api")
+
 	// Structured JSON logging with MDC (trace_id, order_id) for Loki.
 	implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 

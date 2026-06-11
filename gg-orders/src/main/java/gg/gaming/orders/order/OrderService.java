@@ -7,6 +7,7 @@ import gg.gaming.orders.catalog.CatalogProduct;
 import gg.gaming.orders.config.OrderProperties;
 import gg.gaming.orders.outbox.OutboxEvent;
 import gg.gaming.orders.outbox.OutboxRepository;
+import io.opentelemetry.api.trace.Span;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -16,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -130,7 +130,7 @@ public class OrderService {
             "OrderPlaced",
             OUTBOX_TOPIC,
             orderPlacedPayload(order),
-            MDC.get("trace_id")));
+            currentTraceId()));
 
     log.info(
         "order created order_id={} order_number={} total_cents={}",
@@ -138,6 +138,18 @@ public class OrderService {
         order.getOrderNumber(),
         order.getTotalCents());
     return order;
+  }
+
+  /**
+   * Trace id of the active span, for stamping the outbox row so the Milestone-C poller can publish
+   * a {@code traceparent} that chains the Kafka event into this trace. Read from the OTel API (the
+   * agent supplies the live context); returns {@code null} when no valid span is active (e.g. tests
+   * run without the agent) rather than the all-zero invalid id. Reading MDC here does NOT work: the
+   * agent's logback-MDC instrumentation only enriches log output, not the live MDC map.
+   */
+  private static String currentTraceId() {
+    var ctx = Span.current().getSpanContext();
+    return ctx.isValid() ? ctx.getTraceId() : null;
   }
 
   @Transactional(readOnly = true)

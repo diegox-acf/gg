@@ -2,7 +2,7 @@ spring:
   application:
     name: gg-orders
 
-  # Virtual threads (Java 21) — one carrier-free thread per request. Spring Boot 4
+  # Virtual threads (Java 21) — one carrier-free thread per request. Spring Boot 3.5
   # wires this through Tomcat, @Async, and the task executors.
   threads:
     virtual:
