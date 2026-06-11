@@ -114,6 +114,18 @@ This is the "aggressive 4–6 weeks, core features first" plan. If it slips to 8
 4. Killing Orders pod during the PAYING state results in the saga completing correctly after restart, no double charges
 5. Full checkout trace is a single connected flow in Grafana, across browser, BFF, Orders, Inventory, Stripe webhook
 
+**Milestone status** (sequenced into 5 PRs — see ADR-018 and `01-tech-stack.md`):
+- ✅ **A — Inventory service (Go).** Stock + reservations, optimistic locking (CAS),
+  transactional outbox, OTel. Merged to `main` (`gg-inventory/`).
+- 🚧 **B — Orders service (Java/Spring Boot 3.5).** Scaffold + `POST /orders` (PENDING order,
+  Catalog price snapshot, `OrderPlaced` outbox). Branch `gg-orders/0.1.0`.
+- ⬜ **C — Event backbone.** Outbox pollers + Kafka + idempotent consumers (both services).
+- ⬜ **D — Saga orchestration + Stripe.** Orchestrator state machine, PaymentIntents +
+  webhook, recovery worker + sweepers.
+- ⬜ **E — BFF checkout wiring.** Storefront checkout → confirmation → `/account/orders`.
+
+Reservation is **synchronous REST**, terminal commit/release is **Kafka** — see **ADR-018**.
+
 **This is the pivotal phase.** Everything else is setup for this.
 
 ## Phase 4 — Hardening and polish (Week 5)

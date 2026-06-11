@@ -250,6 +250,27 @@ services:
   #       condition: service_healthy
   #   # NOTE: migrations are run separately (`make -C ../gg-inventory migrate-up`)
   #   #       against host port 5434, not auto-applied on startup.
+  #
+  # orders:
+  #   build:
+  #     context: ../gg-orders
+  #     dockerfile: docker/Dockerfile
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-orders:5432/gg_orders
+  #     SPRING_DATASOURCE_USERNAME: postgres
+  #     SPRING_DATASOURCE_PASSWORD: postgres
+  #     CATALOG_BASE_URL: http://catalog:8080
+  #     # OpenTelemetry Java agent → collector (traces + metrics + logs)
+  #     OTEL_SERVICE_NAME: gg-orders
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  #     OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  #     OTEL_LOGS_EXPORTER: otlp
+  #   depends_on:
+  #     postgres-orders:
+  #       condition: service_healthy
+  #   # Flyway migrations auto-apply on startup (unlike the Go services).
 
 volumes:
   postgres_catalog_data:
