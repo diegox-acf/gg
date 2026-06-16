@@ -117,8 +117,9 @@ This is the "aggressive 4–6 weeks, core features first" plan. If it slips to 8
 **Milestone status** (sequenced into 5 PRs — see ADR-018 and `01-tech-stack.md`):
 - ✅ **A — Inventory service (Go).** Stock + reservations, optimistic locking (CAS),
   transactional outbox, OTel. Merged to `main` (`gg-inventory/`).
-- 🚧 **B — Orders service (Java/Spring Boot 3.5).** Scaffold + `POST /orders` (PENDING order,
-  Catalog price snapshot, `OrderPlaced` outbox). Branch `gg-orders/0.1.0`.
+- ✅ **B — Orders service (Java/Spring Boot 3.5).** Scaffold + `POST /orders` (PENDING order,
+  Catalog price snapshot, `OrderPlaced` outbox). Merged to `main` 2026-06-11 (`gg-orders/`);
+  live Orders→Catalog→Postgres trace verified in Tempo.
 - ⬜ **C — Event backbone.** Outbox pollers + Kafka + idempotent consumers (both services).
 - ⬜ **D — Saga orchestration + Stripe.** Orchestrator state machine, PaymentIntents +
   webhook, recovery worker + sweepers.
