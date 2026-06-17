@@ -93,6 +93,19 @@ func main() {
 	)
 	go poller.Run(ctx)
 
+	// Terminal-event consumer (Milestone D): commit/release reservations off
+	// OrderConfirmed/OrderFailed.
+	consumer, err := events.NewConsumer(
+		cfg.KafkaBrokers, cfg.KafkaConsumerGroup, cfg.OrdersTopic,
+		svc, postgres.NewConsumedEventStore(pool), logger,
+	)
+	if err != nil {
+		logger.Error("kafka consumer init failed", "err", err)
+		os.Exit(1)
+	}
+	defer consumer.Close()
+	go consumer.Run(ctx)
+
 	httpSrv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
 		Handler: rest.NewRouter(logger, svc),

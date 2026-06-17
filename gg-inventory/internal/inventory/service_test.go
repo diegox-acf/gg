@@ -33,6 +33,14 @@ func (s *stubRepo) Release(context.Context, string) (*Reservation, error) {
 	return s.reservation, nil
 }
 
+func (s *stubRepo) ReservationIDsByOrder(context.Context, int64) ([]string, error) {
+	s.called = true
+	if s.reservation == nil {
+		return nil, nil
+	}
+	return []string{s.reservation.ReservationID}, nil
+}
+
 func TestReserveValidation(t *testing.T) {
 	valid := ReserveRequest{
 		OrderID:        1,

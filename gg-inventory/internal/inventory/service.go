@@ -62,3 +62,35 @@ func (s *Service) Release(ctx context.Context, reservationID string) (*Reservati
 	}
 	return s.repo.Release(ctx, reservationID)
 }
+
+// CommitOrder commits every still-RESERVED reservation of an order (driven by OrderConfirmed).
+// Idempotent: a redelivery finds nothing RESERVED and is a no-op.
+func (s *Service) CommitOrder(ctx context.Context, orderID int64) error {
+	return s.applyToOrder(ctx, orderID, s.repo.Commit)
+}
+
+// ReleaseOrder releases every still-RESERVED reservation of an order (driven by OrderFailed).
+// Idempotent in the same way as CommitOrder.
+func (s *Service) ReleaseOrder(ctx context.Context, orderID int64) error {
+	return s.applyToOrder(ctx, orderID, s.repo.Release)
+}
+
+func (s *Service) applyToOrder(
+	ctx context.Context,
+	orderID int64,
+	op func(context.Context, string) (*Reservation, error),
+) error {
+	if orderID <= 0 {
+		return fmt.Errorf("%w: order_id must be positive", ErrInvalidRequest)
+	}
+	ids, err := s.repo.ReservationIDsByOrder(ctx, orderID)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if _, err := op(ctx, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}

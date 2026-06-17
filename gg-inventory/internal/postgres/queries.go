@@ -76,4 +76,20 @@ const (
 
 	queryMarkOutboxPublished = `
 		UPDATE outbox SET published_at = NOW() WHERE id = $1`
+
+	// RESERVED reservations of an order — the set to commit/release when its terminal
+	// OrderConfirmed/OrderFailed event arrives. Already-committed/released rows are excluded,
+	// so re-applying the same terminal event is a no-op (idempotent).
+	queryReservationIDsByOrder = `
+		SELECT reservation_id::text
+		FROM reservations
+		WHERE order_id = $1 AND status = 'RESERVED'`
+
+	// Consumer-side dedup (ADR-019).
+	queryIsEventConsumed = `SELECT EXISTS(SELECT 1 FROM consumed_events WHERE event_id = $1)`
+
+	queryMarkEventConsumed = `
+		INSERT INTO consumed_events (event_id, consumer_group, topic)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (event_id) DO NOTHING`
 )

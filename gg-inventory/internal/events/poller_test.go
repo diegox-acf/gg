@@ -99,6 +99,7 @@ func setupPostgres(t *testing.T, ctx context.Context) *pgxpool.Pool {
 		"000002_create_reservations.up.sql",
 		"000003_create_outbox.up.sql",
 		"000004_outbox_traceparent.up.sql",
+		"000005_consumed_events.up.sql",
 	} {
 		sql, err := os.ReadFile(filepath.Join("..", "..", "migrations", f))
 		require.NoError(t, err)
