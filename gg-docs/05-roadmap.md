@@ -120,9 +120,16 @@ This is the "aggressive 4–6 weeks, core features first" plan. If it slips to 8
 - ✅ **B — Orders service (Java/Spring Boot 3.5).** Scaffold + `POST /orders` (PENDING order,
   Catalog price snapshot, `OrderPlaced` outbox). Merged to `main` 2026-06-11 (`gg-orders/`);
   live Orders→Catalog→Postgres trace verified in Tempo.
-- ⬜ **C — Event backbone.** Outbox pollers + Kafka + idempotent consumers (both services).
+- ✅ **C — Event backbone.** Outbox→Kafka pollers both services (Orders spring-kafka,
+  Inventory franz-go; `acks=all` + idempotent, full W3C traceparent stored & propagated);
+  topics provisioned via a `kafka-init` container (auto-create off). Orders idempotent
+  consumer of `inventory.stock-reserved` (`consumed_events` dedup, manual commit, retry→DLQ).
+  Delivery semantics per **ADR-019** (effectively-once, not Kafka EOS). The `OrderPlaced` +
+  terminal-event consumers and Inventory's commit/release consumer are deferred to D.
+  Full publish→consume→dedup→trace verified live.
 - ⬜ **D — Saga orchestration + Stripe.** Orchestrator state machine, PaymentIntents +
-  webhook, recovery worker + sweepers.
+  webhook, recovery worker + sweepers. Includes the C-deferred consumers (Orders ←
+  `OrderConfirmed`/`OrderFailed`, Inventory commit/release off terminal events).
 - ⬜ **E — BFF checkout wiring.** Storefront checkout → confirmation → `/account/orders`.
 
 Reservation is **synchronous REST**, terminal commit/release is **Kafka** — see **ADR-018**.
