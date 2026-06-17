@@ -157,6 +157,56 @@ The dual-write problem: if a service writes to its DB and publishes an event as 
 
 Every service that emits events implements this pattern. No exceptions.
 
+### Delivery guarantees in practice (failure modes)
+
+Delivery is **at-least-once**: never lose an event, tolerate duplicates (ADR-019). Two
+guards combine to give an **effectively-once** end result — exactly-once *effects* without
+Kafka transactions. They cover different duplicate sources; neither alone is sufficient.
+
+**Guard 1 — `FOR UPDATE SKIP LOCKED` (producer side).** The poller claims a batch with
+`SELECT … WHERE published_at IS NULL ORDER BY created_at LIMIT n FOR UPDATE SKIP LOCKED`.
+`FOR UPDATE` locks the claimed rows until the transaction commits; `SKIP LOCKED` makes a
+second poller *step over* already-locked rows instead of blocking. Two pollers therefore take
+**disjoint** batches — no row is published twice, no contention. The publish + the
+`UPDATE published_at` + the commit all happen in that one transaction, so once the lock
+releases the row also no longer matches `published_at IS NULL` (lock + data, two layers).
+(In Hibernate this is `@Lock(PESSIMISTIC_WRITE)` + the `jakarta.persistence.lock.timeout=-2`
+SKIP-LOCKED hint; in raw pgx it is the literal SQL.)
+
+**Guard 2 — `event_id` dedup (consumer side).** Every event carries a stable `event_id` (UUID
+stamped once on the outbox row; survives re-publishes — it is *not* a Kafka offset). Each
+consumer keeps a `consumed_events(event_id PRIMARY KEY, …)` table and, in **one transaction**,
+checks-then-acts: if `event_id` is already recorded, skip; otherwise do the work **and** insert
+the dedup row together. Re-processing the same event is a no-op.
+
+The two duplicate sources `SKIP LOCKED` cannot prevent (they are crashes, not races), and how
+Guard 2 neutralises them:
+
+1. **Poller re-publish.** The poller sets `published_at` only *after* the broker ack. Crash
+   between ack and commit → the row reverts to `published_at IS NULL` while the Kafka record is
+   already durable → on restart it publishes a **second** copy. The consumer sees the same
+   `event_id` twice; the second hits the dedup check and is skipped. (Producer
+   `enable.idempotence` does **not** help — it only collapses retries *within one `send()`*; a
+   re-publish is a separate `send()` / new producer session.)
+2. **Kafka redelivery.** Consumer does the work + commits its DB transaction, then crashes
+   *before* the container commits the Kafka offset (ack mode `RECORD`, auto-commit off). On
+   restart Kafka redelivers from the last committed offset; the dedup row already exists → skip.
+
+**Commit ordering is load-bearing:** the listener's DB transaction (work + dedup row) commits
+**first**, the Kafka offset **second**. A crash in the gap re-delivers and is deduped (safe). The
+reverse order (offset first) would advance past a record whose work never committed → **silent
+loss**. This ordering is the difference between at-least-once and at-most-once.
+
+| Duplicate source | Neutralised by |
+|---|---|
+| Two pollers grab the same rows | `FOR UPDATE SKIP LOCKED` (disjoint batches) |
+| Poller re-publish after crash (ack'd, not committed) | `event_id` dedup |
+| Kafka redelivery (offset uncommitted at crash) | `event_id` dedup + DB-before-offset commit order |
+| Producer's own in-session send retry | `enable.idempotence=true` (producer-id + seq numbers) |
+
+**Consequence — a hard rule:** every consumer handler must be a pure idempotent function of the
+event. A deduped re-delivery is a no-op, so per-event ordering across a duplicate never matters.
+
 ## Saga orchestration (Orders)
 
 Orders is the orchestrator; Inventory and Payments are participants.
