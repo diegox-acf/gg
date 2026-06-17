@@ -15,4 +15,13 @@ class RestClientConfig {
   RestClient catalogRestClient(RestClient.Builder builder, CatalogProperties props) {
     return builder.baseUrl(props.baseUrl()).build();
   }
+
+  /**
+   * RestClient pointed at Inventory (synchronous stock reservation). The OpenTelemetry Java agent
+   * instruments it, so the Orders→Inventory reserve hop joins the distributed trace.
+   */
+  @Bean
+  RestClient inventoryRestClient(RestClient.Builder builder, InventoryProperties props) {
+    return builder.baseUrl(props.baseUrl()).build();
+  }
 }

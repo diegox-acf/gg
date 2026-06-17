@@ -160,6 +160,20 @@ public class Order {
     return status;
   }
 
+  /** Advances the lifecycle status. Allowed-transition rules live in the saga orchestrator. */
+  public void setStatus(OrderStatus status) {
+    this.status = status;
+  }
+
+  /** Stripe PaymentIntent id, set when the saga reaches PAYING (Milestone D2). */
+  public void setPaymentIntentId(String paymentIntentId) {
+    this.paymentIntentId = paymentIntentId;
+  }
+
+  public String getPaymentIntentId() {
+    return paymentIntentId;
+  }
+
   public long getSubtotalCents() {
     return subtotalCents;
   }
