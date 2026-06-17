@@ -33,6 +33,18 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
 
+  # Kafka — the outbox poller publishes events (ADR-019 producer durability). The broker
+  # host listener is localhost:9092 natively; the container override targets kafka:29092.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all                       # ack only after in-sync replicas have it
+      properties:
+        enable.idempotence: true      # dedup producer retries (the idempotent-producer half of EOS)
+        max.in.flight.requests.per.connection: 5   # ordering preserved under idempotence
+
 server:
   port: ${SERVER_PORT:8083}
 
@@ -44,6 +56,11 @@ catalog:
 orders:
   tax-bps: 800            # 8.00% sales tax
   shipping-cents: 999     # flat $9.99 shipping
+  # Outbox relay (Milestone C). Fixed-delay poll; FOR UPDATE SKIP LOCKED batch.
+  outbox:
+    poll-delay-ms: 1000
+    batch-size: 100
+    send-timeout-ms: 10000
 
 management:
   endpoints:
