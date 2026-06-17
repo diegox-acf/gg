@@ -49,6 +49,7 @@ func setupRepo(t *testing.T) (*Repository, *pgxpool.Pool) {
 		"000001_create_stock.up.sql",
 		"000002_create_reservations.up.sql",
 		"000003_create_outbox.up.sql",
+		"000004_outbox_traceparent.up.sql",
 	} {
 		sql, err := os.ReadFile(filepath.Join("..", "..", "migrations", f))
 		require.NoError(t, err)

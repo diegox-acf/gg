@@ -58,6 +58,22 @@ const (
 
 	queryInsertOutbox = `
 		INSERT INTO outbox
-			(aggregate_type, aggregate_id, event_type, topic, payload, trace_id)
-		VALUES ('Reservation', $1, $2, $3, $4::jsonb, $5)`
+			(aggregate_type, aggregate_id, event_type, topic, payload, trace_id, traceparent)
+		VALUES ('Reservation', $1, $2, $3, $4::jsonb, $5, $6)`
+
+	// Outbox relay (Milestone C). Oldest-first batch of unpublished rows, claimed with
+	// FOR UPDATE SKIP LOCKED so concurrent pollers take disjoint rows without blocking;
+	// the lock is held until the surrounding tx commits (by which point the rows are
+	// stamped published). payload::text so pgx scans JSONB straight into a Go string.
+	querySelectUnpublishedOutbox = `
+		SELECT id, event_id::text, aggregate_type, aggregate_id, event_type, topic,
+		       payload::text, COALESCE(trace_id, ''), COALESCE(traceparent, ''), created_at
+		FROM outbox
+		WHERE published_at IS NULL
+		ORDER BY created_at
+		LIMIT $1
+		FOR UPDATE SKIP LOCKED`
+
+	queryMarkOutboxPublished = `
+		UPDATE outbox SET published_at = NOW() WHERE id = $1`
 )

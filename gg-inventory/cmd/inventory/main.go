@@ -9,14 +9,17 @@ import (
 	"os/signal"
 	"syscall"
 
+	"time"
+
 	"github.com/diegox-acf/gg-inventory/internal/config"
+	"github.com/diegox-acf/gg-inventory/internal/events"
 	"github.com/diegox-acf/gg-inventory/internal/inventory"
 	"github.com/diegox-acf/gg-inventory/internal/observability"
 	"github.com/diegox-acf/gg-inventory/internal/postgres"
 	"github.com/diegox-acf/gg-inventory/internal/rest"
 	"github.com/exaring/otelpgx"
-	_ "github.com/joho/godotenv/autoload"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
@@ -71,6 +74,24 @@ func main() {
 
 	repo := postgres.NewRepository(pool, cfg.ReservationTTLMinutes)
 	svc := inventory.NewService(repo)
+
+	// Outbox → Kafka relay (Milestone C). Publishes Stock* events written in-tx by the
+	// repository; runs until ctx is cancelled.
+	publisher, err := events.NewPublisher(cfg.KafkaBrokers)
+	if err != nil {
+		logger.Error("kafka publisher init failed", "err", err)
+		os.Exit(1)
+	}
+	defer publisher.Close()
+
+	poller := events.NewPoller(
+		postgres.NewOutboxRelay(pool),
+		publisher,
+		logger,
+		time.Duration(cfg.OutboxPollIntervalMs)*time.Millisecond,
+		cfg.OutboxBatchSize,
+	)
+	go poller.Run(ctx)
 
 	httpSrv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
