@@ -130,7 +130,8 @@ public class OrderService {
             "OrderPlaced",
             OUTBOX_TOPIC,
             orderPlacedPayload(order),
-            currentTraceId()));
+            currentTraceId(),
+            currentTraceParent()));
 
     log.info(
         "order created order_id={} order_number={} total_cents={}",
@@ -150,6 +151,22 @@ public class OrderService {
   private static String currentTraceId() {
     var ctx = Span.current().getSpanContext();
     return ctx.isValid() ? ctx.getTraceId() : null;
+  }
+
+  /**
+   * Full W3C traceparent ({@code 00-<trace>-<span>-<flags>}) of the active span, stored so the
+   * outbox poller can re-establish this context and chain the published Kafka span into this
+   * order's trace. Built from the OTel API (the agent supplies the live context); {@code null} when
+   * no valid span is active (e.g. tests run without the agent). A valid traceparent needs the span
+   * id too, so trace_id alone is insufficient for propagation — hence this companion to {@link
+   * #currentTraceId}.
+   */
+  private static String currentTraceParent() {
+    var ctx = Span.current().getSpanContext();
+    if (!ctx.isValid()) {
+      return null;
+    }
+    return "00-" + ctx.getTraceId() + "-" + ctx.getSpanId() + "-" + ctx.getTraceFlags().asHex();
   }
 
   @Transactional(readOnly = true)

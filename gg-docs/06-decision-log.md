@@ -561,3 +561,106 @@ orchestrator**, and reserve stock via a **synchronous REST** call:
   The terminal commit/release must survive Orders crashing mid-flight; routing them through
   the transactional outbox + Kafka gives at-least-once delivery and recovery, which a direct
   synchronous call after payment would not.
+
+---
+
+## ADR-019: Delivery semantics — outbox + idempotent consumers ("effectively-once"), not Kafka EOS
+
+**Status:** Accepted
+**Date:** 2026-06-14
+
+**Context:**
+Before building the event backbone (Milestone C — outbox pollers + Kafka consumers), we
+needed an explicit position on **delivery guarantees and data-loss windows**. The question
+that prompted this: with the outbox, idempotency keys, reservations, Stripe, and Kafka all
+in play, "will any data be lost — and shouldn't we be using Kafka's Exactly-Once Semantics
+(EOS)?"
+
+Kafka EOS = **idempotent producer + transactions (`transactional.id`) + `read_committed`
+consumers**. It delivers exactly-once for one specific shape: a **consume → process →
+produce loop entirely inside Kafka** (the Kafka Streams case), making "publish output
+records + commit input offsets" atomic. Crucially, Kafka EOS **cannot** make a **Postgres
+commit + a Kafka publish** atomic — there is no XA transaction spanning the database and the
+broker. In this platform every event originates from a relational state change (an order is
+born in Postgres, not in a Kafka consume loop — see ADR-006, ADR-018), so the dangerous
+boundary is Postgres↔Kafka, which native EOS does not cover. ADR-004's consequences had
+flagged "exactly-once semantics via transactional producers" as deferred learning; this ADR
+resolves the stance now that it matters.
+
+**Saga vs EOS — not the same layer (a clarification, since the two are easily conflated).**
+The saga pattern (ADR-018) and Kafka EOS are orthogonal and solve different problems:
+- **Saga** is an *application/orchestration*-layer pattern for keeping a multi-service
+  *business process* consistent without a distributed ACID transaction — via a local
+  transaction per step plus **compensating actions**. It predates Kafka, is
+  transport-agnostic (ours even reserves stock over plain REST, ADR-018), and depends on
+  EOS *not at all*.
+- **Kafka EOS** is a *transport*-layer feature (idempotent producer + transactions +
+  `read_committed`) for duplicate-free delivery inside a Kafka pipeline.
+
+What the saga actually *requires* is **reliable delivery + idempotency** — and it is
+explicitly designed to *tolerate at-least-once* delivery (that is precisely why its steps
+must be idempotent and compensations exist). The desirable property people shorthand as
+"exactly-once *processing*" is therefore an **effect** we obtain with idempotency (outbox +
+`event_id` dedup), not Kafka's transactional EOS **feature**. So "we are not using EOS"
+removes nothing the saga needs.
+
+**Decision:**
+Achieve end-to-end **effectively-once** = **at-least-once delivery + idempotent consumers**,
+built on the transactional outbox (ADR-006). Do **not** use Kafka transactions /
+`transactional.id` for the Postgres-sourced event flow. The system deliberately favours
+*possible duplicates* (neutralised by idempotency) over *any loss*. Concretely:
+
+- **Atomicity at the source (Postgres):** state row + `outbox` row commit in one DB
+  transaction (ADR-006). The poller relays unpublished rows to Kafka and marks
+  `published_at` only after a successful ack → at-least-once (a crash between publish and
+  mark re-publishes → a duplicate, never a loss).
+- **Producer (the outbox poller):** `acks=all` + `enable.idempotence=true` (default since
+  client 3.0; dedups *producer retries* per partition via producer-id + sequence numbers),
+  `max.in.flight.requests.per.connection ≤ 5` to preserve ordering under idempotence. This
+  is the *idempotent-producer* half of EOS — adopted; the *transactions* half is not.
+- **Consumer:** `enable.auto.commit=false`, commit the offset **only after** processing
+  succeeds (at-least-once); **dedup by `event_id`** (the consumer-side idempotency that makes
+  the effect exactly-once); DLQ after 3 retries (ADR-014). `isolation.level=read_committed`
+  set for correctness even though we publish no Kafka transactions.
+- **Broker/topic durability target (production values):** `replication.factor ≥ 3`,
+  `min.insync.replicas = 2`, `unclean.leader.election.enable = false`, and the same for the
+  internal `__consumer_offsets` / transaction-state topics. The non-loss guarantee for an
+  acked message requires the trio **`acks=all` + `min.insync.replicas=2` +
+  `unclean.leader.election=false`** together; any one missing reopens a loss window.
+
+**Local-dev stance (ADR-013):** the single-broker `gg-local` Kafka keeps
+`replication.factor = 1` / `min.insync.replicas = 1` (true RF=3 needs 3 brokers, a non-goal
+locally). The **application-side** config (producer `acks=all` + idempotence, manual
+consumer commit + `event_id` dedup) is made production-correct now, because that is where
+the logic lives and transfers. The broker durability values above are documented as the
+production checklist, not enforced in the local compose.
+
+**Consequences:**
+- No logical data loss by design: under normal operation and clean crashes/restarts, orders,
+  inventory, and payment state lose ~0%. Remaining loss windows are **infrastructure-failure
+  specific** and confined to the deliberately single-node local stack: RF=1 Kafka (volume
+  loss drops events already marked published), Redis cart with no persistence (~100% loss on
+  Redis restart — acceptable; carts are ephemeral, TTL 7d/90d), and Postgres with no
+  replication/backups (`down -v` or volume corruption = total loss).
+- Consumers **must** be idempotent (dedup by `event_id`); this is now a hard requirement on
+  every consumer, not a nicety.
+- Trace context must propagate over **both** HTTP headers and Kafka message headers (W3C
+  TraceContext) for a single connected trace — and the outbox `trace_id` must be captured
+  from the OTel API, not MDC (see the Milestone-B fix).
+- We forgo Kafka's native exactly-once machinery and its overhead (transaction coordinator,
+  `read_committed` latency) — correct, since it would be redundant for a DB-sourced flow.
+- Production-readiness is a config change (broker RF/min-isr + more brokers), not a redesign.
+
+**Alternatives considered:**
+- **Kafka EOS (transactions + `transactional.id` + `read_committed`):** Rejected for the
+  Postgres-sourced flow. It cannot span the DB↔Kafka boundary that actually matters here, and
+  layering it on top of the outbox adds a transaction coordinator and latency for no
+  additional guarantee. The idempotent-*producer* subset is adopted; full transactions are
+  not. (EOS remains the right tool for a future pure Kafka-to-Kafka consume-process-produce
+  stage, e.g. Kafka Streams — revisit then.)
+- **At-most-once (commit offset before processing):** Rejected. Trades duplicates for actual
+  loss — the opposite of the desired bias.
+- **CDC (Debezium) instead of the polling outbox:** Considered, deferred (already noted in
+  ADR-006). More robust relay, significantly more ops; revisit in Phase 5.
+- **XA / two-phase commit across Postgres and Kafka:** Rejected. No practical XA across these
+  systems; the outbox is the standard answer (consistent with ADR-018's rejection of 2PC).

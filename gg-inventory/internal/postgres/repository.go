@@ -51,8 +51,6 @@ func (r *Repository) GetStock(ctx context.Context, productID int64) (*inventory.
 // Reserve reserves every item atomically (single transaction). Replaying the same
 // idempotency key returns the existing reservations without touching stock.
 func (r *Repository) Reserve(ctx context.Context, req inventory.ReserveRequest) ([]*inventory.Reservation, error) {
-	traceID := traceIDFromContext(ctx)
-
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
@@ -86,7 +84,7 @@ func (r *Repository) Reserve(ctx context.Context, req inventory.ReserveRequest) 
 			return nil, fmt.Errorf("insert reservation: %w", err)
 		}
 
-		if err := writeOutbox(ctx, tx, res.ID, eventStockReserved, topicStockReserved, res, traceID); err != nil {
+		if err := writeOutbox(ctx, tx, res.ID, eventStockReserved, topicStockReserved, res); err != nil {
 			return nil, err
 		}
 		out = append(out, res)
@@ -120,8 +118,6 @@ func (r *Repository) transition(
 	returnToAvailable bool,
 	eventType, topic string,
 ) (*inventory.Reservation, error) {
-	traceID := traceIDFromContext(ctx)
-
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
@@ -156,7 +152,7 @@ func (r *Repository) transition(
 	}
 
 	res.Status = target
-	if err := writeOutbox(ctx, tx, res.ID, eventType, topic, res, traceID); err != nil {
+	if err := writeOutbox(ctx, tx, res.ID, eventType, topic, res); err != nil {
 		return nil, err
 	}
 
@@ -206,9 +202,10 @@ func (r *Repository) expiry() time.Time {
 }
 
 // writeOutbox appends a domain event in the same transaction as the state change
-// (transactional outbox, ADR-006). A later milestone adds the poller that ships
-// these to Kafka.
-func writeOutbox(ctx context.Context, tx pgx.Tx, aggregateID int64, eventType, topic string, res *inventory.Reservation, traceID string) error {
+// (transactional outbox, ADR-006). The events.Poller ships these to Kafka. The full
+// traceparent is captured (not just trace_id) so the poller can re-establish this span's
+// context and chain the produced Kafka span into the same trace.
+func writeOutbox(ctx context.Context, tx pgx.Tx, aggregateID int64, eventType, topic string, res *inventory.Reservation) error {
 	payload, err := json.Marshal(map[string]any{
 		"reservation_id": res.ReservationID,
 		"order_id":       res.OrderID,
@@ -220,14 +217,21 @@ func writeOutbox(ctx context.Context, tx pgx.Tx, aggregateID int64, eventType, t
 		return fmt.Errorf("marshal outbox payload: %w", err)
 	}
 
-	var tid any
-	if traceID != "" {
-		tid = traceID
-	}
-	if _, err := tx.Exec(ctx, queryInsertOutbox, aggregateID, eventType, topic, string(payload), tid); err != nil {
+	if _, err := tx.Exec(ctx, queryInsertOutbox,
+		aggregateID, eventType, topic, string(payload),
+		nullable(traceIDFromContext(ctx)), nullable(traceparentFromContext(ctx)),
+	); err != nil {
 		return fmt.Errorf("write outbox %s: %w", eventType, err)
 	}
 	return nil
+}
+
+// nullable maps "" to a SQL NULL so empty trace fields aren't stored as empty strings.
+func nullable(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
 
 // scanner is satisfied by both pgx.Row and pgx.Rows.
@@ -254,4 +258,14 @@ func traceIDFromContext(ctx context.Context) string {
 		return sc.TraceID().String()
 	}
 	return ""
+}
+
+// traceparentFromContext renders the active span as a W3C traceparent
+// (00-<trace>-<span>-<flags>), or "" when no valid span is present.
+func traceparentFromContext(ctx context.Context) string {
+	sc := trace.SpanContextFromContext(ctx)
+	if !sc.IsValid() {
+		return ""
+	}
+	return fmt.Sprintf("00-%s-%s-%02x", sc.TraceID(), sc.SpanID(), byte(sc.TraceFlags()))
 }

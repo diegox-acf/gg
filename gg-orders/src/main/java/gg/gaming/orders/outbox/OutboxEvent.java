@@ -14,8 +14,8 @@ import org.hibernate.type.SqlTypes;
 
 /**
  * Transactional outbox row (ADR-006). Written in the same transaction as the state change it
- * describes; a poller publishes it to Kafka in Milestone C ({@code publishedAt} stays null until
- * then).
+ * describes; the {@link OutboxPoller} publishes it to Kafka and stamps {@link #publishedAt} ({@code
+ * null} until then). Delivery is at-least-once — consumers dedup by {@link #eventId} (ADR-019).
  */
 @Entity
 @Table(name = "outbox")
@@ -44,8 +44,16 @@ public class OutboxEvent {
   @Column(nullable = false)
   private String payload;
 
+  /** W3C trace id (32 hex) of the originating span — kept for log/query correlation. */
   @Column(name = "trace_id")
   private String traceId;
+
+  /**
+   * Full W3C traceparent ({@code 00-<trace>-<span>-<flags>}) of the originating span. The poller
+   * re-establishes this context so the produced Kafka span joins the original trace.
+   */
+  @Column(name = "traceparent")
+  private String traceParent;
 
   @Column(name = "published_at")
   private Instant publishedAt;
@@ -64,7 +72,8 @@ public class OutboxEvent {
       String eventType,
       String topic,
       String payload,
-      String traceId) {
+      String traceId,
+      String traceParent) {
     this.eventId = UUID.randomUUID();
     this.aggregateType = aggregateType;
     this.aggregateId = aggregateId;
@@ -72,6 +81,12 @@ public class OutboxEvent {
     this.topic = topic;
     this.payload = payload;
     this.traceId = traceId;
+    this.traceParent = traceParent;
+  }
+
+  /** Stamp the row as published once the broker has acked the record. */
+  public void markPublished(Instant at) {
+    this.publishedAt = at;
   }
 
   public Long getId() {
@@ -80,5 +95,41 @@ public class OutboxEvent {
 
   public UUID getEventId() {
     return eventId;
+  }
+
+  public String getAggregateType() {
+    return aggregateType;
+  }
+
+  public long getAggregateId() {
+    return aggregateId;
+  }
+
+  public String getEventType() {
+    return eventType;
+  }
+
+  public String getTopic() {
+    return topic;
+  }
+
+  public String getPayload() {
+    return payload;
+  }
+
+  public String getTraceId() {
+    return traceId;
+  }
+
+  public String getTraceParent() {
+    return traceParent;
+  }
+
+  public Instant getPublishedAt() {
+    return publishedAt;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
   }
 }

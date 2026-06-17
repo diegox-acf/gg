@@ -14,6 +14,12 @@ type Config struct {
 	// ReservationTTL is how long a RESERVED reservation is held before the sweeper
 	// (added in a later milestone) may expire it. 15 minutes per the data model.
 	ReservationTTLMinutes int `env:"RESERVATION_TTL_MINUTES" envDefault:"15"`
+
+	// Kafka outbox relay (Milestone C). Comma-separated brokers; poll interval and batch
+	// size for the outbox poller.
+	KafkaBrokers         []string `env:"KAFKA_BROKERS"          envDefault:"localhost:9092"`
+	OutboxPollIntervalMs int      `env:"OUTBOX_POLL_INTERVAL_MS" envDefault:"1000"`
+	OutboxBatchSize      int      `env:"OUTBOX_BATCH_SIZE"       envDefault:"100"`
 }
 
 func Load() (*Config, error) {

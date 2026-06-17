@@ -125,7 +125,9 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # Topics are provisioned explicitly by the kafka-init service; disable auto-create
+      # so an unknown topic name fails loudly instead of silently auto-spawning (ADR-019).
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -138,6 +140,32 @@ services:
       timeout: 10s
       retries: 10
       start_period: 30s
+
+  # One-shot topic provisioner. Topics are code-owned here (ADR-013: compose is the
+  # infra truth) rather than relying on broker auto-create, so partitions are explicit
+  # and a typo'd topic name fails loudly instead of silently spawning a 1-partition topic.
+  # RF=1 / MIN_ISR=1 is the single-broker local stance (ADR-019); production uses RF>=3,
+  # min.insync.replicas=2. Each domain topic gets a matching .dlq (3 retries -> DLQ).
+  kafka-init:
+    image: apache/kafka:4.2.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -euo pipefail
+        BS=kafka:29092
+        create() { /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$$BS" \
+          --create --if-not-exists --topic "$$1" --partitions "$$2" --replication-factor 1; }
+        for t in orders.order-created orders.order-cancelled \
+                 inventory.stock-reserved inventory.stock-released; do
+          create "$$t" 3
+          create "$$t.dlq" 1
+        done
+        echo "---- topics ----"
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$$BS" --list
+    restart: "no"
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
