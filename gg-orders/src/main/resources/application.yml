@@ -44,6 +44,14 @@ spring:
       properties:
         enable.idempotence: true      # dedup producer retries (the idempotent-producer half of EOS)
         max.in.flight.requests.per.connection: 5   # ordering preserved under idempotence
+    consumer:
+      group-id: gg-orders
+      auto-offset-reset: earliest
+      enable-auto-commit: false       # the container commits offsets after processing (ADR-019)
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        isolation.level: read_committed
 
 server:
   port: ${SERVER_PORT:8083}
