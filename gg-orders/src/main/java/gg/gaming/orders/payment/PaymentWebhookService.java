@@ -1,8 +1,9 @@
 package gg.gaming.orders.payment;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
-import com.stripe.model.PaymentIntent;
 import com.stripe.net.Webhook;
 import gg.gaming.orders.config.PaymentProperties;
 import gg.gaming.orders.saga.SagaOrchestrator;
@@ -20,6 +21,11 @@ import org.springframework.stereotype.Service;
  * <p>Order of operations is <em>process-then-record</em>: the saga (idempotent) runs first, then
  * the audit row is written. If a crash happens between them, Stripe redelivers and the saga safely
  * re-runs; the constraint still prevents a duplicate audit row.
+ *
+ * <p>The PaymentIntent fields we need ({@code id}, {@code metadata.order_id}, decline {@code code})
+ * are read from the <strong>raw event JSON</strong>, not the typed {@code
+ * getDataObjectDeserializer} — those fields are stable across Stripe API versions, so this stays
+ * correct regardless of the account's webhook API version (which can lag the SDK's pinned version).
  */
 @Service
 public class PaymentWebhookService {
@@ -32,12 +38,17 @@ public class PaymentWebhookService {
   private final PaymentProperties props;
   private final PaymentEventRepository events;
   private final SagaOrchestrator saga;
+  private final ObjectMapper objectMapper;
 
   public PaymentWebhookService(
-      PaymentProperties props, PaymentEventRepository events, SagaOrchestrator saga) {
+      PaymentProperties props,
+      PaymentEventRepository events,
+      SagaOrchestrator saga,
+      ObjectMapper objectMapper) {
     this.props = props;
     this.events = events;
     this.saga = saga;
+    this.objectMapper = objectMapper;
   }
 
   /**
@@ -64,8 +75,8 @@ public class PaymentWebhookService {
       return;
     }
 
-    PaymentIntent intent = paymentIntentOf(event);
-    long orderId = orderIdOf(intent);
+    JsonNode intent = paymentIntentNode(payload, event.getId());
+    long orderId = orderIdOf(intent, event.getId());
 
     if (EVENT_SUCCEEDED.equals(type)) {
       saga.confirmPayment(orderId);
@@ -85,30 +96,36 @@ public class PaymentWebhookService {
     }
   }
 
-  private static PaymentIntent paymentIntentOf(Event event) {
-    return (PaymentIntent)
-        event
-            .getDataObjectDeserializer()
-            .getObject()
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "cannot deserialize PaymentIntent from event " + event.getId()));
+  /** The {@code data.object} (the PaymentIntent) of the raw event JSON. */
+  private JsonNode paymentIntentNode(String payload, String eventId) {
+    try {
+      JsonNode object = objectMapper.readTree(payload).path("data").path("object");
+      if (object.isMissingNode() || !object.hasNonNull("id")) {
+        throw new IllegalStateException("event " + eventId + " has no data.object");
+      }
+      return object;
+    } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+      throw new IllegalStateException("event " + eventId + " payload is not valid JSON", e);
+    }
   }
 
-  private static long orderIdOf(PaymentIntent intent) {
-    String orderId = intent.getMetadata().get("order_id");
-    if (orderId == null) {
+  private static long orderIdOf(JsonNode intent, String eventId) {
+    JsonNode orderId = intent.path("metadata").path("order_id");
+    if (orderId.isMissingNode() || orderId.isNull()) {
       throw new IllegalStateException(
-          "PaymentIntent " + intent.getId() + " has no order_id metadata");
+          "PaymentIntent "
+              + intent.path("id").asText()
+              + " (event "
+              + eventId
+              + ") has no order_id");
     }
-    return Long.parseLong(orderId);
+    return orderId.asLong();
   }
 
-  private static String declineReason(PaymentIntent intent) {
-    if (intent.getLastPaymentError() != null && intent.getLastPaymentError().getCode() != null) {
-      return "payment_failed:" + intent.getLastPaymentError().getCode();
-    }
-    return "payment_failed";
+  private static String declineReason(JsonNode intent) {
+    JsonNode code = intent.path("last_payment_error").path("code");
+    return code.isMissingNode() || code.isNull()
+        ? "payment_failed"
+        : "payment_failed:" + code.asText();
   }
 }

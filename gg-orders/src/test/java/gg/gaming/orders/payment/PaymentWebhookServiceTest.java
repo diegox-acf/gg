@@ -31,7 +31,10 @@ class PaymentWebhookServiceTest {
     saga = mock(SagaOrchestrator.class);
     service =
         new PaymentWebhookService(
-            new PaymentProperties("sk_test", SECRET, "pm_card_visa"), events, saga);
+            new PaymentProperties("sk_test", SECRET, "pm_card_visa"),
+            events,
+            saga,
+            new com.fasterxml.jackson.databind.ObjectMapper());
   }
 
   @Test
