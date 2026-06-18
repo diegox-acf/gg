@@ -58,20 +58,22 @@ class SagaOrchestratorTest {
     ReflectionTestUtils.setField(order, "id", 7L); // entity isn't persisted in a unit test
     when(orders.findWithItemsById(7L)).thenReturn(Optional.of(order));
     when(orders.findById(7L)).thenReturn(Optional.of(order));
-    when(payments.createAndConfirmPayment(anyLong(), anyLong(), any(), any()))
-        .thenReturn("pi_test");
+    when(payments.createPaymentIntent(anyLong(), anyLong(), any(), any()))
+        .thenReturn(new StripePaymentGateway.PaymentIntentResult("pi_test", "pi_test_secret"));
   }
 
   @Test
-  void happyPath_reservesThenInitiatesPayment_andRestsInPaying() {
-    saga.run(7L);
+  void happyPath_reservesThenCreatesIntent_andReturnsClientSecret() {
+    CheckoutResult result = saga.begin(7L);
 
-    // Payment is async: the saga reserves, creates the PaymentIntent, and stops at PAYING.
-    // The terminal transition is the webhook's job — no outbox event is emitted yet.
+    // The saga reserves, creates the (unconfirmed) PaymentIntent, and stops at PAYING — the
+    // browser confirms the card; the terminal transition is the webhook's job (no outbox yet).
     assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYING);
     assertThat(order.getPaymentIntentId()).isEqualTo("pi_test");
+    assertThat(result.status()).isEqualTo(OrderStatus.PAYING);
+    assertThat(result.clientSecret()).isEqualTo("pi_test_secret");
     verify(inventory).reserve(eq(7L), any());
-    verify(payments).createAndConfirmPayment(eq(7L), eq(22_599L), eq("USD"), any());
+    verify(payments).createPaymentIntent(eq(7L), eq(22_599L), eq("USD"), any());
     verify(outbox, never()).save(any());
   }
 
@@ -99,21 +101,24 @@ class SagaOrchestratorTest {
   void insufficientStock_failsOrder_andEmitsOrderFailed_withoutPaying() {
     doThrow(new InsufficientStockException(7L)).when(inventory).reserve(anyLong(), any());
 
-    saga.run(7L);
+    CheckoutResult result = saga.begin(7L);
 
     assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
-    verify(payments, never()).createAndConfirmPayment(anyLong(), anyLong(), any(), any());
+    assertThat(result.status()).isEqualTo(OrderStatus.FAILED);
+    assertThat(result.clientSecret()).isNull();
+    verify(payments, never()).createPaymentIntent(anyLong(), anyLong(), any(), any());
     assertThat(savedOutboxEvent().getEventType()).isEqualTo("OrderFailed");
   }
 
   @Test
   void paymentGatewayError_failsOrder_andEmitsOrderFailed() {
-    when(payments.createAndConfirmPayment(anyLong(), anyLong(), any(), any()))
+    when(payments.createPaymentIntent(anyLong(), anyLong(), any(), any()))
         .thenThrow(new PaymentGatewayException("stripe down", null));
 
-    saga.run(7L);
+    CheckoutResult result = saga.begin(7L);
 
     assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
+    assertThat(result.clientSecret()).isNull();
     assertThat(savedOutboxEvent().getEventType()).isEqualTo("OrderFailed");
   }
 
@@ -155,7 +160,7 @@ class SagaOrchestratorTest {
 
   @Test
   void recover_pendingOrder_resumesReserveAndPay() {
-    // No payment intent yet → recovery re-enters run(): reserve (mock) + initiate payment → PAYING.
+    // No payment intent yet → recovery re-enters begin(): reserve (mock) + create intent → PAYING.
     saga.recover(7L);
 
     assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYING);
@@ -167,8 +172,9 @@ class SagaOrchestratorTest {
   void terminalOrder_isANoOp() {
     order.setStatus(OrderStatus.CONFIRMED);
 
-    saga.run(7L);
+    CheckoutResult result = saga.begin(7L);
 
+    assertThat(result.status()).isEqualTo(OrderStatus.CONFIRMED);
     verify(inventory, never()).reserve(anyLong(), any());
     verify(outbox, never()).save(any());
   }

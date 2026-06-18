@@ -1,7 +1,6 @@
 package gg.gaming.orders.payment;
 
 import com.stripe.Stripe;
-import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.RequestOptions;
@@ -13,16 +12,23 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Thin Stripe adapter for the PAYING step. Creates a PaymentIntent and confirms it server-side with
- * a test payment method (dev has no card UI). The PaymentIntent id is returned so the saga can
- * persist it; the actual <em>outcome</em> is delivered asynchronously by Stripe as a webhook, which
- * drives the order's terminal transition (ADR-020) — this call never confirms the order.
+ * Thin Stripe adapter for the PAYING step. Creates an <strong>unconfirmed</strong> PaymentIntent
+ * and returns its id + {@code client_secret}; the storefront confirms it with Stripe Elements (the
+ * card never touches our backend — ADR-021). The actual outcome arrives asynchronously as a
+ * webhook, which drives the order's terminal transition (ADR-020) — this call never confirms the
+ * order.
  *
  * <p>Idempotent: the Stripe idempotency key {@code order-<id>-pi} means a retried create returns
- * the same PaymentIntent instead of charging twice.
+ * the same PaymentIntent (same {@code client_secret}) instead of creating a second one.
  */
 @Component
 public class StripePaymentGateway {
+
+  /**
+   * The bits of a created PaymentIntent the saga needs: its id (persisted) and the client secret
+   * (handed to the browser to confirm).
+   */
+  public record PaymentIntentResult(String id, String clientSecret) {}
 
   private static final Logger log = LoggerFactory.getLogger(StripePaymentGateway.class);
 
@@ -38,25 +44,21 @@ public class StripePaymentGateway {
   }
 
   /**
-   * Creates and confirms a PaymentIntent for the order, returning its id.
-   *
-   * <p>A declined card is <em>not</em> an error here: the PaymentIntent still exists and Stripe
-   * emits {@code payment_intent.payment_failed}, so its id is returned and the webhook fails the
-   * order. A {@link PaymentGatewayException} is thrown only when no PaymentIntent could be created
-   * (auth/network/API error) — there will be no webhook, so the saga fails the order itself.
+   * Creates an unconfirmed PaymentIntent for the order and returns its id + {@code client_secret}.
+   * The browser confirms it with Stripe Elements; the outcome arrives later as a webhook. Throws
+   * {@link PaymentGatewayException} when no PaymentIntent could be created (auth/network/API error)
+   * — there will be no webhook, so the saga fails the order itself.
    */
-  public String createAndConfirmPayment(
+  public PaymentIntentResult createPaymentIntent(
       long orderId, long amountCents, String currency, String orderNumber) {
     PaymentIntentCreateParams params =
         PaymentIntentCreateParams.builder()
             .setAmount(amountCents)
             .setCurrency(currency.toLowerCase())
-            .setPaymentMethod(props.testPaymentMethod())
-            .setConfirm(true)
             .setAutomaticPaymentMethods(
                 PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
                     .setEnabled(true)
-                    // No card UI in dev → forbid redirect-based methods that need a return_url.
+                    // Card-only checkout → forbid redirect methods that need a return_url.
                     .setAllowRedirects(
                         PaymentIntentCreateParams.AutomaticPaymentMethods.AllowRedirects.NEVER)
                     .build())
@@ -69,16 +71,7 @@ public class StripePaymentGateway {
     try {
       PaymentIntent pi = PaymentIntent.create(params, options);
       log.info("order {} PaymentIntent {} created, status={}", orderId, pi.getId(), pi.getStatus());
-      return pi.getId();
-    } catch (CardException e) {
-      // Declined: the PaymentIntent exists; let the payment_intent.payment_failed webhook fail it.
-      String piId =
-          e.getStripeError() != null ? e.getStripeError().getPaymentIntent().getId() : null;
-      log.info("order {} card declined ({}); PaymentIntent {}", orderId, e.getCode(), piId);
-      if (piId == null) {
-        throw new PaymentGatewayException("card declined without a PaymentIntent", e);
-      }
-      return piId;
+      return new PaymentIntentResult(pi.getId(), pi.getClientSecret());
     } catch (StripeException e) {
       throw new PaymentGatewayException("stripe createPaymentIntent failed: " + e.getMessage(), e);
     }

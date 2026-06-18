@@ -52,12 +52,20 @@ class CreateOrderIntegrationTest {
                    "postal_code":"90001","country":"US"}}
       """;
 
+  @org.junit.jupiter.api.BeforeEach
+  void stubPaymentIntent() {
+    // Default: the saga's PAYING step gets a PaymentIntent. Tests that fail before payment
+    // (insufficient stock, unknown product) simply never reach this stub.
+    when(payments.createPaymentIntent(anyLong(), anyLong(), any(), any()))
+        .thenReturn(new StripePaymentGateway.PaymentIntentResult("pi_default", "secret_default"));
+  }
+
   @Test
-  void createsOrderReservesAndInitiatesPaymentWithSnapshotPrices() throws Exception {
+  void createsOrderReservesAndCreatesPaymentIntentWithSnapshotPrices() throws Exception {
     when(catalog.getProduct(1L))
         .thenReturn(new CatalogProduct(1, "SKU-1", "RTX 5090", 10_000, "USD"));
-    when(payments.createAndConfirmPayment(anyLong(), anyLong(), any(), any()))
-        .thenReturn("pi_test_123");
+    when(payments.createPaymentIntent(anyLong(), anyLong(), any(), any()))
+        .thenReturn(new StripePaymentGateway.PaymentIntentResult("pi_test_123", "pi_test_secret"));
 
     mvc.perform(
             post("/orders")
@@ -66,15 +74,17 @@ class CreateOrderIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(BODY))
         .andExpect(status().isCreated())
-        // Payment is async (ADR-020): reserved (mock) + PaymentIntent created → rests in PAYING.
-        .andExpect(jsonPath("$.status").value("PAYING"))
-        .andExpect(jsonPath("$.order_number").exists())
-        .andExpect(jsonPath("$.subtotal_cents").value(20_000))
-        .andExpect(jsonPath("$.tax_cents").value(1_600))
-        .andExpect(jsonPath("$.shipping_cents").value(999))
-        .andExpect(jsonPath("$.total_cents").value(22_599))
-        .andExpect(jsonPath("$.items[0].sku").value("SKU-1"))
-        .andExpect(jsonPath("$.items[0].name").value("RTX 5090"));
+        // Reserved (mock) + PaymentIntent created → order rests in PAYING; client_secret returned
+        // for the browser to confirm (ADR-021); terminal event awaits the webhook.
+        .andExpect(jsonPath("$.order.status").value("PAYING"))
+        .andExpect(jsonPath("$.client_secret").value("pi_test_secret"))
+        .andExpect(jsonPath("$.order.order_number").exists())
+        .andExpect(jsonPath("$.order.subtotal_cents").value(20_000))
+        .andExpect(jsonPath("$.order.tax_cents").value(1_600))
+        .andExpect(jsonPath("$.order.shipping_cents").value(999))
+        .andExpect(jsonPath("$.order.total_cents").value(22_599))
+        .andExpect(jsonPath("$.order.items[0].sku").value("SKU-1"))
+        .andExpect(jsonPath("$.order.items[0].name").value("RTX 5090"));
 
     assertThat(orders.findByIdempotencyKey("int-key-1")).isPresent();
     assertThat(outbox.count()).isEqualTo(1); // OrderPlaced only — terminal event awaits the webhook
@@ -93,7 +103,8 @@ class CreateOrderIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(BODY))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.status").value("FAILED")); // reserve rejected → no payment
+        .andExpect(jsonPath("$.order.status").value("FAILED")) // reserve rejected → no payment
+        .andExpect(jsonPath("$.client_secret").value(org.hamcrest.Matchers.nullValue()));
 
     assertThat(outbox.count()).isEqualTo(2); // OrderPlaced + OrderFailed
   }
