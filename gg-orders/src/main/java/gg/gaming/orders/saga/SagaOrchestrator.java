@@ -17,6 +17,8 @@ import gg.gaming.orders.order.Order;
 import gg.gaming.orders.order.OrderRepository;
 import gg.gaming.orders.outbox.OutboxEvent;
 import gg.gaming.orders.outbox.OutboxRepository;
+import gg.gaming.orders.payment.PaymentGatewayException;
+import gg.gaming.orders.payment.StripePaymentGateway;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -41,8 +43,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * no-op, and the reserve call is idempotent in Inventory — so the Milestone-D3 recovery worker can
  * call it to resume a crashed saga.
  *
- * <p>Milestone D1 stubs payment (auto-approved). D2 replaces the stub with a Stripe PaymentIntent
- * created at PAYING and the CONFIRMED/FAILED transition driven by the webhook.
+ * <p>Payment is <strong>asynchronous</strong> (ADR-020): at PAYING the saga creates+confirms a
+ * Stripe PaymentIntent and stops. The order rests in PAYING until Stripe delivers a webhook, which
+ * calls {@link #confirmPayment}/{@link #failPayment} to make the terminal transition. {@code run}
+ * therefore returns with the order in PAYING on the happy path, not CONFIRMED.
  */
 @Service
 public class SagaOrchestrator {
@@ -65,6 +69,7 @@ public class SagaOrchestrator {
   private final OrderRepository orders;
   private final OutboxRepository outbox;
   private final InventoryClient inventory;
+  private final StripePaymentGateway payments;
   private final ObjectMapper objectMapper;
   private final TransactionTemplate tx;
 
@@ -72,11 +77,13 @@ public class SagaOrchestrator {
       OrderRepository orders,
       OutboxRepository outbox,
       InventoryClient inventory,
+      StripePaymentGateway payments,
       ObjectMapper objectMapper,
       PlatformTransactionManager txManager) {
     this.orders = orders;
     this.outbox = outbox;
     this.inventory = inventory;
+    this.payments = payments;
     this.objectMapper = objectMapper;
     this.tx = new TransactionTemplate(txManager);
   }
@@ -111,12 +118,49 @@ public class SagaOrchestrator {
       transition(orderId, PAYING);
     }
 
-    // Step 2 — pay + confirm (PAYING). D1 auto-approves; D2 creates/confirms a Stripe
-    // PaymentIntent.
-    if (currentStatus(orderId) == PAYING) {
-      finishConfirmed(orderId);
-      log.info("order {} CONFIRMED", orderId);
+    // Step 2 — initiate payment (PAYING). Create+confirm a PaymentIntent, then stop: the terminal
+    // transition is made later by the Stripe webhook (confirmPayment/failPayment). Re-entry after a
+    // PaymentIntent already exists is a no-op — the webhook owns the outcome from here.
+    Order paying = managed(orderId);
+    if (paying.getStatus() == PAYING && paying.getPaymentIntentId() == null) {
+      initiatePayment(paying);
     }
+  }
+
+  /**
+   * PAYING step: create+confirm the PaymentIntent and persist its id, or fail on a gateway error.
+   */
+  private void initiatePayment(Order order) {
+    long orderId = order.getId();
+    try {
+      String paymentIntentId =
+          payments.createAndConfirmPayment(
+              orderId, order.getTotalCents(), order.getCurrency(), order.getOrderNumber());
+      tx.executeWithoutResult(status -> managed(orderId).setPaymentIntentId(paymentIntentId));
+      log.info("order {} PAYING — awaiting Stripe webhook (intent {})", orderId, paymentIntentId);
+    } catch (PaymentGatewayException e) {
+      // No PaymentIntent was created, so no webhook will come — fail the order now.
+      log.warn("order {} FAILED — payment gateway error", orderId, e);
+      finishFailed(orderId, "payment_error");
+    }
+  }
+
+  /**
+   * Webhook entry point for a successful payment ({@code payment_intent.succeeded}). Idempotent: a
+   * no-op if the order is already terminal.
+   */
+  public void confirmPayment(long orderId) {
+    finishConfirmed(orderId);
+    log.info("order {} CONFIRMED", orderId);
+  }
+
+  /**
+   * Webhook entry point for a failed payment ({@code payment_intent.payment_failed}). Idempotent: a
+   * no-op if the order is already terminal. Inventory releases the reservation off OrderFailed.
+   */
+  public void failPayment(long orderId, String reason) {
+    log.info("order {} FAILED — {}", orderId, reason);
+    finishFailed(orderId, reason);
   }
 
   /** Moves the order to {@code next} in its own transaction; a no-op if already there. */
@@ -132,12 +176,15 @@ public class SagaOrchestrator {
         });
   }
 
-  /** CONFIRMED + an {@code OrderConfirmed} outbox event, atomically. */
+  /** CONFIRMED + an {@code OrderConfirmed} outbox event, atomically. Idempotent on re-delivery. */
   private void finishConfirmed(long orderId) {
     tx.executeWithoutResult(
         status -> {
           Order order = managed(orderId);
-          if (order.getStatus() == CONFIRMED) {
+          if (isTerminal(order.getStatus())) {
+            if (order.getStatus() != CONFIRMED) {
+              log.warn("order {} already {} — ignoring late confirm", orderId, order.getStatus());
+            }
             return;
           }
           guard(orderId, order.getStatus(), CONFIRMED);
