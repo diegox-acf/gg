@@ -224,6 +224,40 @@ Orders is the orchestrator; Inventory and Payments are participants.
 
 **Recovery:** On service start, a recovery worker scans orders in non-terminal states older than N seconds and resumes. Each step is idempotent so replays are safe.
 
+### Recovery & reconciliation in practice (Milestone D3)
+
+Two independent safety nets resume work a crash left behind. Both are timers that
+run **in addition to** the normal paths (synchronous saga, terminal Kafka events,
+Stripe webhooks) — they only ever do something when the happy path didn't.
+
+**Orders — saga recovery worker** (`SagaRecoveryWorker`, fixed-delay scan, first run
+at startup). Loads ids of orders in `{PENDING, RESERVING, PAYING}` and calls
+`SagaOrchestrator.recover(id)`:
+- `PENDING`/`RESERVING` (or `PAYING` before the PaymentIntent was persisted) → re-enter
+  `run()`. Reserve is idempotent (Inventory keys on the request) and pay-initiation is
+  idempotent (Stripe key `order-<id>-pi`), so resuming never double-reserves or
+  double-charges.
+- `PAYING` with a PaymentIntent → **reconcile against Stripe** (`PaymentIntent.retrieve`):
+  `succeeded` → confirm, `canceled`/`requires_payment_method` → fail, anything still
+  in-flight (`processing`, `requires_action`) → leave for the next scan. This is the
+  deliberate **exception to "the webhook is the authority" (ADR-020)**: a *missed* webhook
+  is recovered by polling, but polling is the fallback, not the primary path. One failing
+  order never blocks the others; a Stripe error just retries next scan.
+
+**Inventory — reservation sweeper** (`Sweeper`, fixed-delay tick). Claims `RESERVED`
+rows past `expires_at` (the partial index `idx_reservations_expiry`) and transitions each
+to `EXPIRED` — same stock effect as a release (returns it to the pool) — emitting a
+distinct `StockExpired` event on `inventory.stock-released`. Idempotent: a reservation the
+order's saga concurrently committed/released is skipped (`ErrInvalidTransition`).
+
+**The TTL race (acknowledged).** The sweeper could expire a reservation for an order that
+is *legitimately* still `PAYING` (e.g. a very slow webhook), after which a late success
+would confirm an order whose stock was already returned. This is bounded, not eliminated,
+by ordering the two timers: the **TTL is generous (15 min)** while the **recovery scan is
+frequent (≈1 min)**, so a stuck `PAYING` order is almost always reconciled to a terminal
+state well before its reservation ages out. A future hardening (out of D3 scope) is for
+Orders to consume `StockExpired` and fail the matching order, closing the window entirely.
+
 ## Data ownership summary
 
 | Data | Owner | Shared via |

@@ -31,4 +31,13 @@ type Repository interface {
 	// ReservationIDsByOrder returns the reservation ids still RESERVED for an order,
 	// used to commit/release a whole order on its terminal Kafka event.
 	ReservationIDsByOrder(ctx context.Context, orderID int64) ([]string, error)
+
+	// Expire transitions a RESERVED reservation to EXPIRED (same stock effect as Release)
+	// and writes a StockExpired outbox event. The reservation sweeper uses this for rows
+	// past their TTL. Idempotent: a reservation already terminal is left unchanged.
+	Expire(ctx context.Context, reservationID string) (*Reservation, error)
+
+	// ExpiredReservationIDs returns up to limit reservation ids still RESERVED past their
+	// expires_at — the sweeper's work set.
+	ExpiredReservationIDs(ctx context.Context, limit int) ([]string, error)
 }

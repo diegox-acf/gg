@@ -84,6 +84,12 @@ orders:
     poll-delay-ms: 1000
     batch-size: 100
     send-timeout-ms: 10000
+  # Saga recovery worker (Milestone D3): resume orders left mid-saga by a crash; reconcile
+  # PAYING orders against Stripe for a missed webhook. Scan interval well under the 15-min
+  # reservation TTL so stuck PAYING orders heal before Inventory's sweeper expires the reservation.
+  recovery:
+    enabled: true
+    scan-interval-ms: 60000
 
 management:
   endpoints:

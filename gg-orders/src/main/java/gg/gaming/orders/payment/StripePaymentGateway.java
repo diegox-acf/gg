@@ -83,4 +83,20 @@ public class StripePaymentGateway {
       throw new PaymentGatewayException("stripe createPaymentIntent failed: " + e.getMessage(), e);
     }
   }
+
+  /**
+   * Retrieves the current status of a PaymentIntent (e.g. {@code succeeded}, {@code
+   * requires_payment_method}, {@code processing}, {@code canceled}). Used by the recovery worker to
+   * reconcile an order stuck in PAYING when its webhook was missed. Throws {@link
+   * PaymentGatewayException} on a Stripe error so the caller leaves the order untouched and
+   * retries.
+   */
+  public String getPaymentStatus(String paymentIntentId) {
+    try {
+      return PaymentIntent.retrieve(paymentIntentId).getStatus();
+    } catch (StripeException e) {
+      throw new PaymentGatewayException(
+          "stripe retrievePaymentIntent failed: " + e.getMessage(), e);
+    }
+  }
 }

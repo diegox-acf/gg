@@ -127,6 +127,52 @@ func TestReserveCommitReleaseLifecycle(t *testing.T) {
 	require.ErrorIs(t, err, inventory.ErrInvalidTransition)
 }
 
+func TestSweepExpiredReservations(t *testing.T) {
+	ctx := context.Background()
+	_, pool := setupRepo(t)
+	// A repo with a negative TTL stamps expires_at in the past, so the reservation is
+	// immediately sweepable — no waiting in the test.
+	repo := NewRepository(pool, -1)
+	svc := inventory.NewService(repo)
+
+	res, err := repo.Reserve(ctx, inventory.ReserveRequest{
+		OrderID:        30,
+		IdempotencyKey: "SWEEP",
+		Items:          []inventory.ReservationItem{{ProductID: 1, Quantity: 2}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, inventory.ReservationReserved, res[0].Status)
+	st, _ := repo.GetStock(ctx, 1)
+	require.Equal(t, 3, st.Available)
+	require.Equal(t, 2, st.Reserved)
+
+	// Sweep: the expired reservation is EXPIRED and its stock returns to the pool.
+	n, err := svc.SweepExpiredReservations(ctx, 100)
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+
+	st, _ = repo.GetStock(ctx, 1)
+	require.Equal(t, 5, st.Available)
+	require.Equal(t, 0, st.Reserved)
+
+	var status string
+	require.NoError(t, pool.QueryRow(ctx,
+		"SELECT status FROM reservations WHERE reservation_id = $1", res[0].ReservationID).Scan(&status))
+	require.Equal(t, "EXPIRED", status)
+
+	// A StockExpired outbox event was written (in the same tx as the expiry).
+	var eventType string
+	require.NoError(t, pool.QueryRow(ctx,
+		"SELECT event_type FROM outbox WHERE aggregate_id = $1 AND event_type = 'StockExpired'",
+		res[0].ID).Scan(&eventType))
+	require.Equal(t, "StockExpired", eventType)
+
+	// Idempotent: nothing left to sweep.
+	n, err = svc.SweepExpiredReservations(ctx, 100)
+	require.NoError(t, err)
+	require.Equal(t, 0, n)
+}
+
 func TestReserveInsufficientStockIsAtomic(t *testing.T) {
 	ctx := context.Background()
 	repo, _ := setupRepo(t)
