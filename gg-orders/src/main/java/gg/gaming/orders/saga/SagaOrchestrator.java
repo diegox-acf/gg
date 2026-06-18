@@ -38,15 +38,17 @@ import org.springframework.transaction.support.TransactionTemplate;
  * consumes to commit or release the reservation (compensation).
  *
  * <p>Each status transition is its own short transaction; the REST reserve happens between
- * transactions (never inside one). {@link #run} is <strong>resumable and idempotent</strong>: it
+ * transactions (never inside one). {@link #begin} is <strong>resumable and idempotent</strong>: it
  * skips already-completed steps based on the persisted status, re-running a terminal order is a
  * no-op, and the reserve call is idempotent in Inventory — so the Milestone-D3 recovery worker can
  * call it to resume a crashed saga.
  *
- * <p>Payment is <strong>asynchronous</strong> (ADR-020): at PAYING the saga creates+confirms a
- * Stripe PaymentIntent and stops. The order rests in PAYING until Stripe delivers a webhook, which
- * calls {@link #confirmPayment}/{@link #failPayment} to make the terminal transition. {@code run}
- * therefore returns with the order in PAYING on the happy path, not CONFIRMED.
+ * <p>Payment is <strong>asynchronous</strong> (ADR-020) and <strong>confirmed by the browser</strong>
+ * (ADR-021): at PAYING the saga creates an <em>unconfirmed</em> PaymentIntent and returns its
+ * {@code client_secret}; the storefront confirms the card with Stripe Elements. The order rests in
+ * PAYING until Stripe delivers a webhook, which calls {@link #confirmPayment}/{@link #failPayment}
+ * to make the terminal transition. {@link #begin} therefore returns with the order in PAYING on the
+ * happy path, not CONFIRMED.
  */
 @Service
 public class SagaOrchestrator {
