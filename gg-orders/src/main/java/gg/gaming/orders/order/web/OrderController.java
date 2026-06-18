@@ -30,10 +30,12 @@ class OrderController {
   }
 
   /**
-   * Creates an order and runs the checkout saga (reserve → pay → confirm). Identity ({@code
-   * X-User-Id}) is forwarded by the BFF; creation is idempotent on {@code Idempotency-Key}. Returns
-   * the order in its terminal state ({@code CONFIRMED}/{@code FAILED}); the status is 201 because
-   * the order resource was created regardless of the saga outcome.
+   * Creates an order and runs the checkout saga (reserve → initiate payment). Identity ({@code
+   * X-User-Id}) is forwarded by the BFF; creation is idempotent on {@code Idempotency-Key}. Payment
+   * is asynchronous (ADR-020): the happy path returns the order in {@code PAYING} and the Stripe
+   * webhook later drives it to {@code CONFIRMED}/{@code FAILED} (poll {@code GET /orders/{id}}). A
+   * reservation failure returns {@code FAILED} synchronously. Status is 201 — the order resource
+   * was created regardless of outcome.
    */
   @PostMapping
   ResponseEntity<OrderResponse> create(

@@ -17,6 +17,7 @@ import gg.gaming.orders.inventory.InsufficientStockException;
 import gg.gaming.orders.inventory.InventoryClient;
 import gg.gaming.orders.order.OrderRepository;
 import gg.gaming.orders.outbox.OutboxRepository;
+import gg.gaming.orders.payment.StripePaymentGateway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -42,6 +43,7 @@ class CreateOrderIntegrationTest {
   @Autowired private OutboxRepository outbox;
   @MockitoBean private CatalogClient catalog;
   @MockitoBean private InventoryClient inventory; // reserve() succeeds by default (void no-op)
+  @MockitoBean private StripePaymentGateway payments; // no real Stripe in tests
 
   private static final String BODY =
       """
@@ -51,9 +53,11 @@ class CreateOrderIntegrationTest {
       """;
 
   @Test
-  void createsAndConfirmsOrderWithSnapshotPricesAndOutboxEvents() throws Exception {
+  void createsOrderReservesAndInitiatesPaymentWithSnapshotPrices() throws Exception {
     when(catalog.getProduct(1L))
         .thenReturn(new CatalogProduct(1, "SKU-1", "RTX 5090", 10_000, "USD"));
+    when(payments.createAndConfirmPayment(anyLong(), anyLong(), any(), any()))
+        .thenReturn("pi_test_123");
 
     mvc.perform(
             post("/orders")
@@ -62,7 +66,8 @@ class CreateOrderIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(BODY))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.status").value("CONFIRMED")) // saga reserved (mock) + confirmed
+        // Payment is async (ADR-020): reserved (mock) + PaymentIntent created → rests in PAYING.
+        .andExpect(jsonPath("$.status").value("PAYING"))
         .andExpect(jsonPath("$.order_number").exists())
         .andExpect(jsonPath("$.subtotal_cents").value(20_000))
         .andExpect(jsonPath("$.tax_cents").value(1_600))
@@ -72,7 +77,7 @@ class CreateOrderIntegrationTest {
         .andExpect(jsonPath("$.items[0].name").value("RTX 5090"));
 
     assertThat(orders.findByIdempotencyKey("int-key-1")).isPresent();
-    assertThat(outbox.count()).isEqualTo(2); // OrderPlaced + OrderConfirmed
+    assertThat(outbox.count()).isEqualTo(1); // OrderPlaced only — terminal event awaits the webhook
   }
 
   @Test

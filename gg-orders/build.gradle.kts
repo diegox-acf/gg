@@ -30,6 +30,9 @@ dependencies {
 	implementation("org.flywaydb:flyway-database-postgresql")
 	runtimeOnly("org.postgresql:postgresql")
 
+	// Stripe — PaymentIntent creation at PAYING + webhook signature verification (Milestone D2).
+	implementation("com.stripe:stripe-java:33.0.0")
+
 	// OpenTelemetry API — read the active trace id in app code to stamp outbox rows.
 	// The runtime trace context is supplied by the OTel Java agent (-javaagent); this
 	// is just the compile/link surface. BOM version stays at/below the agent's bundled

@@ -64,6 +64,17 @@ catalog:
 inventory:
   base-url: ${INVENTORY_BASE_URL:http://localhost:8082}
 
+# Stripe (test mode). The saga creates+confirms a PaymentIntent at PAYING; the terminal
+# CONFIRMED/FAILED transition is driven by the webhook (ADR-020), never the create call.
+# api-key:        sk_test_... (Stripe secret key)
+# webhook-secret: whsec_...  (printed by `stripe listen --forward-to localhost:8083/webhooks/stripe`)
+# test-payment-method: server-side confirm PM so dev doesn't need a card UI; pm_card_visa
+#                      succeeds, pm_card_chargeDeclined fails.
+stripe:
+  api-key: ${STRIPE_API_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  test-payment-method: ${STRIPE_TEST_PAYMENT_METHOD:pm_card_visa}
+
 # Order pricing constants (02-business-logic.md). Cents/bps to avoid float drift.
 orders:
   tax-bps: 800            # 8.00% sales tax

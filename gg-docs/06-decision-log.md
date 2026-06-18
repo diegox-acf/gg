@@ -664,3 +664,88 @@ production checklist, not enforced in the local compose.
   ADR-006). More robust relay, significantly more ops; revisit in Phase 5.
 - **XA / two-phase commit across Postgres and Kafka:** Rejected. No practical XA across these
   systems; the outbox is the standard answer (consistent with ADR-018's rejection of 2PC).
+
+---
+
+## ADR-020: Stripe payment is asynchronous — webhook drives the terminal transition
+
+**Status:** Accepted
+**Date:** 2026-06-17
+
+**Context:**
+Milestone D1 stubbed payment (the saga auto-confirmed at PAYING). D2 wires real
+Stripe (test mode). The question D2 forces: **what makes an order CONFIRMED?** Two
+shapes were possible.
+
+1. **Synchronous confirm:** in the PAYING step, create + confirm a PaymentIntent and
+   read the API response — `succeeded` → CONFIRMED, decline → FAILED — all inside the
+   `POST /orders` request. The webhook becomes a redundant audit signal.
+2. **Asynchronous confirm:** the PAYING step creates + confirms the PaymentIntent and
+   **stops**; the order rests in PAYING. Stripe's **webhook** (`payment_intent.succeeded`
+   / `payment_intent.payment_failed`) is the authority that makes the terminal
+   transition.
+
+The synchronous response is not a reliable source of truth for payment outcome:
+many payment methods complete asynchronously (3DS/SCA, delayed bank methods, async
+captures), and even for cards the authoritative, replayable record of "what finally
+happened" is the webhook. Stripe's own guidance is to **fulfill on the webhook**, not
+on the create/confirm response. This is also the natural fit for the saga: the PAYING
+step is a long-running external interaction whose result arrives out-of-band.
+
+**Decision:**
+Payment is **asynchronous; the webhook is the single authority** for the terminal
+transition.
+
+- **PAYING step (`SagaOrchestrator.initiatePayment`):** create + confirm a PaymentIntent
+  (`amount = total_cents`, `metadata.order_id`), persist `payment_intent_id`, and return.
+  The order stays in PAYING. The Stripe idempotency key `order-<id>-pi` makes the create
+  safe to retry without double-charging.
+- **`POST /orders`** therefore returns the order in **PAYING** on the happy path (still
+  201 — the resource exists); the client polls `GET /orders/{id}` for the terminal state.
+  A *reservation* failure still fails synchronously (no PaymentIntent was created).
+- **Webhook (`POST /webhooks/stripe`):** verify the signature against the signing secret
+  (raw body required), then `payment_intent.succeeded` → `confirmPayment` (CONFIRMED +
+  `OrderConfirmed` outbox) and `payment_intent.payment_failed` → `failPayment` (FAILED +
+  `OrderFailed` outbox, on which Inventory releases the reservation). Other event types
+  are acknowledged (200) and ignored. Bad signature → 400.
+- **Idempotency (two independent guards, consistent with ADR-019's at-least-once stance —
+  Stripe also delivers webhooks at-least-once):** the `payment_events.stripe_event_id`
+  UNIQUE constraint records each event at most once, and the saga transitions are no-ops
+  once terminal. Ordering is **process-then-record** so a crash between the two re-runs the
+  (idempotent) saga rather than silently swallowing the event.
+- **A declined card is not a gateway error:** the PaymentIntent exists and Stripe emits
+  `payment_intent.payment_failed`, so the decline flows through the webhook like any other
+  outcome. A `PaymentGatewayException` (no PaymentIntent created at all — auth/network)
+  fails the order synchronously, since no webhook will follow.
+
+**Dev ergonomics:** there is no card-entry UI yet, so the gateway confirms server-side
+with a configurable test PaymentMethod (`stripe.test-payment-method`, default
+`pm_card_visa`; `pm_card_chargeDeclined` for the failure path). The real webhook still
+fires and drives the transition, so the asynchronous path is exercised end-to-end via
+`stripe listen --forward-to localhost:8083/webhooks/stripe`. When the storefront gains a
+real Stripe Elements checkout, only the confirm source changes — the webhook contract is
+unchanged.
+
+**Consequences:**
+- The saga is now genuinely **paused** between PAYING and terminal, waiting on an external
+  event. An order can be stuck in PAYING if the webhook never arrives (CLI down, Stripe
+  outage) — handled by **Milestone D3** (recovery worker that re-queries Stripe for
+  non-terminal orders + the reservation TTL sweeper). For D2, a stuck PAYING is acceptable
+  and visible.
+- One more transactional boundary on the inbound side, mirroring the outbox on the
+  outbound side: webhook → DB (`payment_events` + order state + outbox row) → Kafka.
+- The terminal trace no longer chains from the `POST /orders` request span; it originates
+  in the webhook request span (a separate trace), correlated by `order_id` /
+  `payment_intent_id`. Acceptable — the payment genuinely happens later.
+
+**Alternatives considered:**
+- **Synchronous confirm (read the create/confirm response):** Rejected. Not authoritative
+  for async payment methods/SCA, contradicts Stripe's fulfill-on-webhook guidance, and
+  couples order outcome to request latency. (We still *create+confirm* synchronously for
+  dev convenience, but never *decide the outcome* from that response.)
+- **Poll Stripe for PaymentIntent status instead of webhooks:** Rejected for the primary
+  path — wasteful and slow. Polling is reserved for D3 *recovery* of orders whose webhook
+  was missed.
+- **Kafka-based payment events instead of HTTP webhooks:** N/A — Stripe delivers over
+  HTTPS webhooks; we translate the outcome into our own `OrderConfirmed`/`OrderFailed`
+  Kafka events via the outbox, keeping the internal contract unchanged.
