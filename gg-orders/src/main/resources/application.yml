@@ -60,6 +60,10 @@ server:
 catalog:
   base-url: ${CATALOG_BASE_URL:http://localhost:8080}
 
+# Inventory service — the saga reserves stock here over synchronous REST (ADR-018).
+inventory:
+  base-url: ${INVENTORY_BASE_URL:http://localhost:8082}
+
 # Order pricing constants (02-business-logic.md). Cents/bps to avoid float drift.
 orders:
   tax-bps: 800            # 8.00% sales tax

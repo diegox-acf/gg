@@ -20,6 +20,10 @@ type Config struct {
 	KafkaBrokers         []string `env:"KAFKA_BROKERS"          envDefault:"localhost:9092"`
 	OutboxPollIntervalMs int      `env:"OUTBOX_POLL_INTERVAL_MS" envDefault:"1000"`
 	OutboxBatchSize      int      `env:"OUTBOX_BATCH_SIZE"       envDefault:"100"`
+
+	// Kafka consumer (Milestone D) — commit/release reservations off terminal order events.
+	KafkaConsumerGroup string `env:"KAFKA_CONSUMER_GROUP" envDefault:"gg-inventory"`
+	OrdersTopic        string `env:"ORDERS_TOPIC"         envDefault:"orders.order-created"`
 }
 
 func Load() (*Config, error) {

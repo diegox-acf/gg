@@ -27,4 +27,8 @@ type Repository interface {
 	// reserved -= qty) and writes a StockReleased outbox event. Idempotent:
 	// releasing an already RELEASED reservation is a no-op success.
 	Release(ctx context.Context, reservationID string) (*Reservation, error)
+
+	// ReservationIDsByOrder returns the reservation ids still RESERVED for an order,
+	// used to commit/release a whole order on its terminal Kafka event.
+	ReservationIDsByOrder(ctx context.Context, orderID int64) ([]string, error)
 }

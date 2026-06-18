@@ -3,6 +3,7 @@ package gg.gaming.orders.order.web;
 import gg.gaming.orders.order.CreateOrderCommand;
 import gg.gaming.orders.order.Order;
 import gg.gaming.orders.order.OrderService;
+import gg.gaming.orders.saga.SagaOrchestrator;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -21,14 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 class OrderController {
 
   private final OrderService service;
+  private final SagaOrchestrator saga;
 
-  OrderController(OrderService service) {
+  OrderController(OrderService service, SagaOrchestrator saga) {
     this.service = service;
+    this.saga = saga;
   }
 
   /**
-   * Creates an order in PENDING. Identity ({@code X-User-Id}) is forwarded by the BFF; the call is
-   * idempotent on {@code Idempotency-Key}.
+   * Creates an order and runs the checkout saga (reserve → pay → confirm). Identity ({@code
+   * X-User-Id}) is forwarded by the BFF; creation is idempotent on {@code Idempotency-Key}. Returns
+   * the order in its terminal state ({@code CONFIRMED}/{@code FAILED}); the status is 201 because
+   * the order resource was created regardless of the saga outcome.
    */
   @PostMapping
   ResponseEntity<OrderResponse> create(
@@ -36,7 +41,9 @@ class OrderController {
       @RequestHeader("Idempotency-Key") String idempotencyKey,
       @Valid @RequestBody CreateOrderRequest request) {
     Order order = service.createOrder(toCommand(userId, idempotencyKey, request));
-    return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.from(order));
+    saga.run(order.getId());
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(OrderResponse.from(service.getOrder(order.getId())));
   }
 
   @GetMapping("/{id}")

@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gg.gaming.orders.catalog.CatalogClient;
 import gg.gaming.orders.catalog.CatalogProduct;
+import gg.gaming.orders.common.Tracing;
 import gg.gaming.orders.config.OrderProperties;
 import gg.gaming.orders.outbox.OutboxEvent;
 import gg.gaming.orders.outbox.OutboxRepository;
-import io.opentelemetry.api.trace.Span;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -130,8 +130,8 @@ public class OrderService {
             "OrderPlaced",
             OUTBOX_TOPIC,
             orderPlacedPayload(order),
-            currentTraceId(),
-            currentTraceParent()));
+            Tracing.currentTraceId(),
+            Tracing.currentTraceParent()));
 
     log.info(
         "order created order_id={} order_number={} total_cents={}",
@@ -139,34 +139,6 @@ public class OrderService {
         order.getOrderNumber(),
         order.getTotalCents());
     return order;
-  }
-
-  /**
-   * Trace id of the active span, for stamping the outbox row so the Milestone-C poller can publish
-   * a {@code traceparent} that chains the Kafka event into this trace. Read from the OTel API (the
-   * agent supplies the live context); returns {@code null} when no valid span is active (e.g. tests
-   * run without the agent) rather than the all-zero invalid id. Reading MDC here does NOT work: the
-   * agent's logback-MDC instrumentation only enriches log output, not the live MDC map.
-   */
-  private static String currentTraceId() {
-    var ctx = Span.current().getSpanContext();
-    return ctx.isValid() ? ctx.getTraceId() : null;
-  }
-
-  /**
-   * Full W3C traceparent ({@code 00-<trace>-<span>-<flags>}) of the active span, stored so the
-   * outbox poller can re-establish this context and chain the published Kafka span into this
-   * order's trace. Built from the OTel API (the agent supplies the live context); {@code null} when
-   * no valid span is active (e.g. tests run without the agent). A valid traceparent needs the span
-   * id too, so trace_id alone is insufficient for propagation — hence this companion to {@link
-   * #currentTraceId}.
-   */
-  private static String currentTraceParent() {
-    var ctx = Span.current().getSpanContext();
-    if (!ctx.isValid()) {
-      return null;
-    }
-    return "00-" + ctx.getTraceId() + "-" + ctx.getSpanId() + "-" + ctx.getTraceFlags().asHex();
   }
 
   @Transactional(readOnly = true)

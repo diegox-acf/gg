@@ -96,6 +96,26 @@ func (r *Repository) Reserve(ctx context.Context, req inventory.ReserveRequest) 
 	return out, nil
 }
 
+// ReservationIDsByOrder returns the reservation ids (UUID text) still RESERVED for an order —
+// the set to commit or release when the order's terminal event arrives.
+func (r *Repository) ReservationIDsByOrder(ctx context.Context, orderID int64) ([]string, error) {
+	rows, err := r.pool.Query(ctx, queryReservationIDsByOrder, orderID)
+	if err != nil {
+		return nil, fmt.Errorf("query reservations for order %d: %w", orderID, err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan reservation id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 func (r *Repository) Commit(ctx context.Context, reservationID string) (*inventory.Reservation, error) {
 	// Commit: reserved -= qty, available unchanged (already decremented at reserve).
 	return r.transition(ctx, reservationID, inventory.ReservationCommitted, false,
