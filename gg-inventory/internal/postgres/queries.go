@@ -85,6 +85,15 @@ const (
 		FROM reservations
 		WHERE order_id = $1 AND status = 'RESERVED'`
 
+	// Sweeper work set (D3): RESERVED reservations past their TTL. Backed by the partial
+	// index idx_reservations_expiry; ordered oldest-first so the longest-abandoned go first.
+	queryExpiredReservationIDs = `
+		SELECT reservation_id::text
+		FROM reservations
+		WHERE status = 'RESERVED' AND expires_at < NOW()
+		ORDER BY expires_at
+		LIMIT $1`
+
 	// Consumer-side dedup (ADR-019).
 	queryIsEventConsumed = `SELECT EXISTS(SELECT 1 FROM consumed_events WHERE event_id = $1)`
 

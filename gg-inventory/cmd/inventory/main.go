@@ -106,6 +106,16 @@ func main() {
 	defer consumer.Close()
 	go consumer.Run(ctx)
 
+	// Reservation sweeper (Milestone D3): expire RESERVED rows past their TTL — the safety net
+	// for a saga that crashed before sending a terminal commit/release.
+	sweeper := inventory.NewSweeper(
+		svc,
+		logger,
+		time.Duration(cfg.SweepIntervalMs)*time.Millisecond,
+		cfg.SweepBatchSize,
+	)
+	go sweeper.Run(ctx)
+
 	httpSrv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
 		Handler: rest.NewRouter(logger, svc),

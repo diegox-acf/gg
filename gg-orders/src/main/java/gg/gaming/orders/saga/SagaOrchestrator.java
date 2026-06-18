@@ -163,6 +163,48 @@ public class SagaOrchestrator {
     finishFailed(orderId, reason);
   }
 
+  /**
+   * Resumes a non-terminal order toward a terminal state (Milestone D3 recovery). Safe to call on
+   * any order: terminal orders are a no-op. A PAYING order with a PaymentIntent is reconciled
+   * against Stripe (its webhook may have been missed); anything else re-enters {@link #run} (the
+   * reserve and pay-initiation steps are idempotent).
+   */
+  public void recover(long orderId) {
+    Order order =
+        orders
+            .findWithItemsById(orderId)
+            .orElseThrow(() -> new IllegalStateException("order not found: " + orderId));
+
+    if (isTerminal(order.getStatus())) {
+      return;
+    }
+    if (order.getStatus() == PAYING && order.getPaymentIntentId() != null) {
+      reconcilePayment(orderId, order.getPaymentIntentId());
+    } else {
+      run(orderId); // PENDING/RESERVING, or PAYING before the intent was persisted
+    }
+  }
+
+  /** Queries Stripe for the PaymentIntent's real outcome and applies the matching transition. */
+  private void reconcilePayment(long orderId, String paymentIntentId) {
+    String status;
+    try {
+      status = payments.getPaymentStatus(paymentIntentId);
+    } catch (PaymentGatewayException e) {
+      log.warn("recover order {} — could not query Stripe; will retry next scan", orderId, e);
+      return;
+    }
+    switch (status) {
+      case "succeeded" -> confirmPayment(orderId);
+      case "canceled" -> failPayment(orderId, "payment_canceled");
+      // A confirmed-then-declined PaymentIntent falls back to requires_payment_method.
+      case "requires_payment_method" -> failPayment(orderId, "payment_failed");
+      default ->
+          log.info(
+              "recover order {} — PaymentIntent still '{}'; leaving in PAYING", orderId, status);
+    }
+  }
+
   /** Moves the order to {@code next} in its own transaction; a no-op if already there. */
   private void transition(long orderId, OrderStatus next) {
     tx.executeWithoutResult(

@@ -41,6 +41,19 @@ func (s *stubRepo) ReservationIDsByOrder(context.Context, int64) ([]string, erro
 	return []string{s.reservation.ReservationID}, nil
 }
 
+func (s *stubRepo) Expire(context.Context, string) (*Reservation, error) {
+	s.called = true
+	return s.reservation, nil
+}
+
+func (s *stubRepo) ExpiredReservationIDs(context.Context, int) ([]string, error) {
+	s.called = true
+	if s.reservation == nil {
+		return nil, nil
+	}
+	return []string{s.reservation.ReservationID}, nil
+}
+
 func TestReserveValidation(t *testing.T) {
 	valid := ReserveRequest{
 		OrderID:        1,

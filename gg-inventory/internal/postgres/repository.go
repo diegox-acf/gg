@@ -23,6 +23,7 @@ const (
 	eventStockReserved  = "StockReserved"
 	eventStockCommitted = "StockCommitted"
 	eventStockReleased  = "StockReleased"
+	eventStockExpired   = "StockExpired"
 
 	topicStockReserved = "inventory.stock-reserved"
 	topicStockReleased = "inventory.stock-released"
@@ -126,6 +127,35 @@ func (r *Repository) Release(ctx context.Context, reservationID string) (*invent
 	// Release: available += qty, reserved -= qty (stock returns to the pool).
 	return r.transition(ctx, reservationID, inventory.ReservationReleased, true,
 		eventStockReleased, topicStockReleased)
+}
+
+// Expire is the sweeper's terminal transition for an abandoned reservation past its TTL:
+// same stock effect as Release (returns it to the pool) but recorded as EXPIRED and emitted
+// as a distinct StockExpired event on the stock-released topic. Idempotent; a reservation the
+// order's saga already committed/released is left as-is (ErrInvalidTransition, benign to the sweeper).
+func (r *Repository) Expire(ctx context.Context, reservationID string) (*inventory.Reservation, error) {
+	return r.transition(ctx, reservationID, inventory.ReservationExpired, true,
+		eventStockExpired, topicStockReleased)
+}
+
+// ExpiredReservationIDs returns up to limit reservation ids still RESERVED past their expiry —
+// the sweeper's work set. Uses the partial index idx_reservations_expiry.
+func (r *Repository) ExpiredReservationIDs(ctx context.Context, limit int) ([]string, error) {
+	rows, err := r.pool.Query(ctx, queryExpiredReservationIDs, limit)
+	if err != nil {
+		return nil, fmt.Errorf("query expired reservations: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan reservation id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }
 
 // transition moves a RESERVED reservation to target, adjusting stock and emitting

@@ -118,6 +118,52 @@ class SagaOrchestratorTest {
   }
 
   @Test
+  void recover_payingWithSucceededIntent_confirms() {
+    order.setStatus(OrderStatus.PAYING);
+    order.setPaymentIntentId("pi_x");
+    when(payments.getPaymentStatus("pi_x")).thenReturn("succeeded");
+
+    saga.recover(7L);
+
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    assertThat(savedOutboxEvent().getEventType()).isEqualTo("OrderConfirmed");
+  }
+
+  @Test
+  void recover_payingWithDeclinedIntent_fails() {
+    order.setStatus(OrderStatus.PAYING);
+    order.setPaymentIntentId("pi_x");
+    when(payments.getPaymentStatus("pi_x")).thenReturn("requires_payment_method");
+
+    saga.recover(7L);
+
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
+    assertThat(savedOutboxEvent().getEventType()).isEqualTo("OrderFailed");
+  }
+
+  @Test
+  void recover_payingStillProcessing_staysPaying() {
+    order.setStatus(OrderStatus.PAYING);
+    order.setPaymentIntentId("pi_x");
+    when(payments.getPaymentStatus("pi_x")).thenReturn("processing");
+
+    saga.recover(7L);
+
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYING);
+    verify(outbox, never()).save(any());
+  }
+
+  @Test
+  void recover_pendingOrder_resumesReserveAndPay() {
+    // No payment intent yet → recovery re-enters run(): reserve (mock) + initiate payment → PAYING.
+    saga.recover(7L);
+
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYING);
+    assertThat(order.getPaymentIntentId()).isEqualTo("pi_test");
+    verify(inventory).reserve(eq(7L), any());
+  }
+
+  @Test
   void terminalOrder_isANoOp() {
     order.setStatus(OrderStatus.CONFIRMED);
 

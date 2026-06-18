@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -73,6 +74,30 @@ func (s *Service) CommitOrder(ctx context.Context, orderID int64) error {
 // Idempotent in the same way as CommitOrder.
 func (s *Service) ReleaseOrder(ctx context.Context, orderID int64) error {
 	return s.applyToOrder(ctx, orderID, s.repo.Release)
+}
+
+// SweepExpiredReservations expires up to batchSize reservations still RESERVED past their TTL
+// (D3 safety net for a saga that crashed and never sent a terminal event). Each expiry is its own
+// transaction; a reservation the order's saga concurrently committed/released is skipped
+// (ErrInvalidTransition / ErrReservationNotFound are benign here). Returns the number expired.
+func (s *Service) SweepExpiredReservations(ctx context.Context, batchSize int) (int, error) {
+	ids, err := s.repo.ExpiredReservationIDs(ctx, batchSize)
+	if err != nil {
+		return 0, err
+	}
+	expired := 0
+	for _, id := range ids {
+		switch _, err := s.repo.Expire(ctx, id); {
+		case err == nil:
+			expired++
+		case errors.Is(err, ErrInvalidTransition), errors.Is(err, ErrReservationNotFound):
+			// The order's saga won the race (commit/release) — nothing for the sweeper to do.
+			continue
+		default:
+			return expired, err
+		}
+	}
+	return expired, nil
 }
 
 func (s *Service) applyToOrder(

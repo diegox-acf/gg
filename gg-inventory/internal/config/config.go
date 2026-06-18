@@ -24,6 +24,11 @@ type Config struct {
 	// Kafka consumer (Milestone D) — commit/release reservations off terminal order events.
 	KafkaConsumerGroup string `env:"KAFKA_CONSUMER_GROUP" envDefault:"gg-inventory"`
 	OrdersTopic        string `env:"ORDERS_TOPIC"         envDefault:"orders.order-created"`
+
+	// Reservation sweeper (Milestone D3) — expire RESERVED rows past their TTL. Interval is
+	// well under ReservationTTLMinutes so expiries are caught promptly once a reservation ages out.
+	SweepIntervalMs int `env:"SWEEP_INTERVAL_MS" envDefault:"30000"`
+	SweepBatchSize  int `env:"SWEEP_BATCH_SIZE"  envDefault:"100"`
 }
 
 func Load() (*Config, error) {
