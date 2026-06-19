@@ -127,9 +127,12 @@ This is the "aggressive 4–6 weeks, core features first" plan. If it slips to 8
   Delivery semantics per **ADR-019** (effectively-once, not Kafka EOS). The `OrderPlaced` +
   terminal-event consumers and Inventory's commit/release consumer are deferred to D.
   Full publish→consume→dedup→trace verified live.
-- ⬜ **D — Saga orchestration + Stripe.** Orchestrator state machine, PaymentIntents +
-  webhook, recovery worker + sweepers. Includes the C-deferred consumers (Orders ←
-  `OrderConfirmed`/`OrderFailed`, Inventory commit/release off terminal events).
+- ✅ **D — Saga orchestration + Stripe.** Orchestrator state machine (PENDING→RESERVING→PAYING→
+  CONFIRMED|FAILED), Stripe PaymentIntents + **async webhook-driven** confirmation (**ADR-020**),
+  recovery worker + reservation sweeper. Includes the C-deferred consumers (Orders ←
+  `OrderConfirmed`/`OrderFailed`, Inventory commit/release off terminal events). Split D1/D2/D3,
+  all merged to `main` 2026-06-18; verified live (happy/declined/idempotent-resend; missed-webhook
+  recovery; sweeper expiry).
 - ⬜ **E — BFF checkout wiring.** Storefront checkout → confirmation → `/account/orders`.
 
 Reservation is **synchronous REST**, terminal commit/release is **Kafka** — see **ADR-018**.

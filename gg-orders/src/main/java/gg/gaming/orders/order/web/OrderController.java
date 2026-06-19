@@ -3,6 +3,7 @@ package gg.gaming.orders.order.web;
 import gg.gaming.orders.order.CreateOrderCommand;
 import gg.gaming.orders.order.Order;
 import gg.gaming.orders.order.OrderService;
+import gg.gaming.orders.saga.CheckoutResult;
 import gg.gaming.orders.saga.SagaOrchestrator;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -30,22 +31,24 @@ class OrderController {
   }
 
   /**
-   * Creates an order and runs the checkout saga (reserve → initiate payment). Identity ({@code
-   * X-User-Id}) is forwarded by the BFF; creation is idempotent on {@code Idempotency-Key}. Payment
-   * is asynchronous (ADR-020): the happy path returns the order in {@code PAYING} and the Stripe
-   * webhook later drives it to {@code CONFIRMED}/{@code FAILED} (poll {@code GET /orders/{id}}). A
-   * reservation failure returns {@code FAILED} synchronously. Status is 201 — the order resource
-   * was created regardless of outcome.
+   * Creates an order and begins the checkout saga (reserve → create PaymentIntent). Identity
+   * ({@code X-User-Id}) is forwarded by the BFF; creation is idempotent on {@code Idempotency-Key}.
+   * On success the order rests in {@code PAYING} and the response carries the Stripe {@code
+   * client_secret} the browser confirms with Stripe Elements (ADR-021); the webhook later drives
+   * the order to {@code CONFIRMED}/{@code FAILED} (poll {@code GET /orders/{id}}). A reservation
+   * failure returns {@code FAILED} with no secret. Status is 201 — the order resource was created
+   * regardless.
    */
   @PostMapping
-  ResponseEntity<OrderResponse> create(
+  ResponseEntity<CreateOrderResponse> create(
       @RequestHeader("X-User-Id") String userId,
       @RequestHeader("Idempotency-Key") String idempotencyKey,
       @Valid @RequestBody CreateOrderRequest request) {
     Order order = service.createOrder(toCommand(userId, idempotencyKey, request));
-    saga.run(order.getId());
+    CheckoutResult result = saga.begin(order.getId());
+    OrderResponse view = OrderResponse.from(service.getOrder(order.getId()));
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(OrderResponse.from(service.getOrder(order.getId())));
+        .body(new CreateOrderResponse(view, result.clientSecret()));
   }
 
   @GetMapping("/{id}")

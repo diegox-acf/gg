@@ -38,15 +38,17 @@ import org.springframework.transaction.support.TransactionTemplate;
  * consumes to commit or release the reservation (compensation).
  *
  * <p>Each status transition is its own short transaction; the REST reserve happens between
- * transactions (never inside one). {@link #run} is <strong>resumable and idempotent</strong>: it
+ * transactions (never inside one). {@link #begin} is <strong>resumable and idempotent</strong>: it
  * skips already-completed steps based on the persisted status, re-running a terminal order is a
  * no-op, and the reserve call is idempotent in Inventory — so the Milestone-D3 recovery worker can
  * call it to resume a crashed saga.
  *
- * <p>Payment is <strong>asynchronous</strong> (ADR-020): at PAYING the saga creates+confirms a
- * Stripe PaymentIntent and stops. The order rests in PAYING until Stripe delivers a webhook, which
- * calls {@link #confirmPayment}/{@link #failPayment} to make the terminal transition. {@code run}
- * therefore returns with the order in PAYING on the happy path, not CONFIRMED.
+ * <p>Payment is <strong>asynchronous</strong> (ADR-020) and <strong>confirmed by the browser</strong>
+ * (ADR-021): at PAYING the saga creates an <em>unconfirmed</em> PaymentIntent and returns its
+ * {@code client_secret}; the storefront confirms the card with Stripe Elements. The order rests in
+ * PAYING until Stripe delivers a webhook, which calls {@link #confirmPayment}/{@link #failPayment}
+ * to make the terminal transition. {@link #begin} therefore returns with the order in PAYING on the
+ * happy path, not CONFIRMED.
  */
 @Service
 public class SagaOrchestrator {
@@ -88,15 +90,20 @@ public class SagaOrchestrator {
     this.tx = new TransactionTemplate(txManager);
   }
 
-  /** Advances the order toward a terminal state, resuming from whatever status it is in. */
-  public void run(long orderId) {
+  /**
+   * Advances the order toward PAYING, resuming from whatever status it is in, and returns the
+   * outcome. On success the order rests in PAYING and the result carries the PaymentIntent {@code
+   * client_secret} for the browser to confirm (Stripe Elements, ADR-021); a reserve/gateway failure
+   * returns a FAILED result with no secret.
+   */
+  public CheckoutResult begin(long orderId) {
     Order order =
         orders
             .findWithItemsById(orderId)
             .orElseThrow(() -> new IllegalStateException("order not found: " + orderId));
 
     if (isTerminal(order.getStatus())) {
-      return; // already CONFIRMED/FAILED — nothing to do (idempotent re-entry)
+      return new CheckoutResult(orderId, order.getStatus(), null); // idempotent re-entry
     }
 
     // Step 1 — reserve stock (PENDING/RESERVING). Reserve is idempotent, so re-entry is safe.
@@ -107,41 +114,41 @@ public class SagaOrchestrator {
       } catch (InsufficientStockException e) {
         log.info("order {} FAILED — insufficient stock", orderId);
         finishFailed(orderId, "insufficient_stock");
-        return;
+        return new CheckoutResult(orderId, FAILED, null);
       } catch (InventoryUnavailableException e) {
-        // D3 recovery may resume; for D1 we fail the order (no reservation was made, so no
-        // compensation is needed).
         log.warn("order {} FAILED — inventory unavailable", orderId, e);
         finishFailed(orderId, "inventory_unavailable");
-        return;
+        return new CheckoutResult(orderId, FAILED, null);
       }
       transition(orderId, PAYING);
     }
 
-    // Step 2 — initiate payment (PAYING). Create+confirm a PaymentIntent, then stop: the terminal
-    // transition is made later by the Stripe webhook (confirmPayment/failPayment). Re-entry after a
-    // PaymentIntent already exists is a no-op — the webhook owns the outcome from here.
+    // Step 2 — create the PaymentIntent (PAYING) and return its client_secret. The terminal
+    // transition is the webhook's job later; re-entry after an intent exists doesn't re-create one.
     Order paying = managed(orderId);
     if (paying.getStatus() == PAYING && paying.getPaymentIntentId() == null) {
-      initiatePayment(paying);
+      return initiatePayment(paying);
     }
+    return new CheckoutResult(orderId, currentStatus(orderId), null);
   }
 
   /**
-   * PAYING step: create+confirm the PaymentIntent and persist its id, or fail on a gateway error.
+   * PAYING step: create an unconfirmed PaymentIntent, persist its id, and return its client_secret;
+   * a gateway error (no intent created → no webhook) fails the order.
    */
-  private void initiatePayment(Order order) {
+  private CheckoutResult initiatePayment(Order order) {
     long orderId = order.getId();
     try {
-      String paymentIntentId =
-          payments.createAndConfirmPayment(
+      StripePaymentGateway.PaymentIntentResult intent =
+          payments.createPaymentIntent(
               orderId, order.getTotalCents(), order.getCurrency(), order.getOrderNumber());
-      tx.executeWithoutResult(status -> managed(orderId).setPaymentIntentId(paymentIntentId));
-      log.info("order {} PAYING — awaiting Stripe webhook (intent {})", orderId, paymentIntentId);
+      tx.executeWithoutResult(status -> managed(orderId).setPaymentIntentId(intent.id()));
+      log.info("order {} PAYING — awaiting card confirmation (intent {})", orderId, intent.id());
+      return new CheckoutResult(orderId, PAYING, intent.clientSecret());
     } catch (PaymentGatewayException e) {
-      // No PaymentIntent was created, so no webhook will come — fail the order now.
       log.warn("order {} FAILED — payment gateway error", orderId, e);
       finishFailed(orderId, "payment_error");
+      return new CheckoutResult(orderId, FAILED, null);
     }
   }
 
@@ -166,8 +173,9 @@ public class SagaOrchestrator {
   /**
    * Resumes a non-terminal order toward a terminal state (Milestone D3 recovery). Safe to call on
    * any order: terminal orders are a no-op. A PAYING order with a PaymentIntent is reconciled
-   * against Stripe (its webhook may have been missed); anything else re-enters {@link #run} (the
-   * reserve and pay-initiation steps are idempotent).
+   * against Stripe (its webhook may have been missed); anything else re-enters {@link #begin} (the
+   * reserve and pay-initiation steps are idempotent; the returned client_secret is unused here
+   * since no browser is waiting).
    */
   public void recover(long orderId) {
     Order order =
@@ -181,7 +189,7 @@ public class SagaOrchestrator {
     if (order.getStatus() == PAYING && order.getPaymentIntentId() != null) {
       reconcilePayment(orderId, order.getPaymentIntentId());
     } else {
-      run(orderId); // PENDING/RESERVING, or PAYING before the intent was persisted
+      begin(orderId); // PENDING/RESERVING, or PAYING before the intent was persisted
     }
   }
 

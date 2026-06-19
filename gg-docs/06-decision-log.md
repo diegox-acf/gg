@@ -749,3 +749,64 @@ unchanged.
 - **Kafka-based payment events instead of HTTP webhooks:** N/A — Stripe delivers over
   HTTPS webhooks; we translate the outcome into our own `OrderConfirmed`/`OrderFailed`
   Kafka events via the outbox, keeping the internal contract unchanged.
+
+---
+
+## ADR-021: Stripe Elements — card confirmation moves to the browser (realizes ADR-020)
+
+**Status:** Accepted
+**Date:** 2026-06-18
+
+**Context:**
+ADR-020 made payment asynchronous (webhook-authoritative) and, lacking a card UI,
+had the backend **confirm** the PaymentIntent server-side with a test PaymentMethod
+(`pm_card_visa`) as a dev stand-in. It explicitly anticipated this ADR: *"when the
+storefront gains a real Stripe Elements checkout, only the confirm source changes —
+the webhook contract is unchanged."* Milestone E builds that checkout, so the
+stand-in is now replaced by a real client-side confirmation.
+
+**Decision:**
+**The browser confirms the card with Stripe Elements; the backend never sees card
+data.** Concretely, splitting Milestone E by tier (E1 backend, E2 storefront):
+
+- **PAYING step creates an *unconfirmed* PaymentIntent** (`automatic_payment_methods`,
+  no `payment_method`, no `confirm`) and returns its `client_secret`. `POST /orders`
+  surfaces it in the response (`CreateOrderResponse { order, client_secret }`).
+- **The storefront mounts Stripe Elements**, collects the card, and calls
+  `stripe.confirmPayment(client_secret, …)`. Stripe processes and emits the same
+  webhook as before; **ADR-020's webhook contract is unchanged** —
+  `payment_intent.succeeded`/`.payment_failed` still drive CONFIRMED/FAILED, and the
+  `payment_events` idempotency guard is untouched.
+- **Sequencing:** the order is created and **stock reserved when the user advances to
+  the payment step** (a `client_secret` must exist before Elements can mount). An
+  out-of-stock checkout therefore fails *before* card entry (exit criterion #3, for
+  free); the reserve→pay steps remain idempotent so a retried submit is safe (Stripe
+  idempotency key `order-<id>-pi` returns the same intent/secret).
+- **Recovery (ADR D3) is unchanged:** the worker still reconciles a stuck PAYING order
+  via `PaymentIntent.retrieve`. A PaymentIntent created but never confirmed by the
+  browser (abandoned checkout) simply stays `requires_payment_method` until the
+  reservation sweeper expires it and the order ages out.
+
+**Consequences:**
+- **PCI scope is minimized:** raw card data flows browser→Stripe only; our backend
+  handles just the `client_secret` (scoped to one PaymentIntent — its intended use).
+- The gateway no longer confirms server-side: `createAndConfirmPayment` is replaced by
+  `createPaymentIntent` (returns id + `client_secret`), and the dev-only
+  `stripe.test-payment-method` knob is **retired**. Server-side `CardException`
+  handling is gone — a decline is now reported to the browser by `confirmPayment` and,
+  authoritatively, by the `payment_intent.payment_failed` webhook.
+- `POST /orders` response shape changes (adds `client_secret`); the BFF reads it to
+  drive Elements, then polls `GET /orders/{id}` for the terminal state.
+- The storefront needs Stripe's publishable key (`pk_test_…`) and `@stripe/stripe-js`
+  + `@stripe/react-stripe-js` (E2).
+
+**Alternatives considered:**
+- **Keep server-side confirm (ADR-020 dev path) in production:** Rejected. It is not a
+  real checkout — no card entry, no SCA/3DS path, and it never exercises the
+  Elements/PCI boundary that is a core learning goal of this milestone.
+- **Stripe Checkout (hosted redirect) instead of Elements:** Rejected for now. Less
+  control over the branded checkout UX (the design system is a priority), and a
+  redirect flow muddies the single-page trace. Elements keeps checkout on `gaming.gg`.
+- **Confirm with a PaymentMethod id collected client-side but confirmed server-side:**
+  Rejected. Pulls card-adjacent handling back toward the backend for no benefit over
+  Elements' `confirmPayment`.
