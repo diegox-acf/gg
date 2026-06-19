@@ -14,6 +14,8 @@
     "@gg/types": "workspace:*",
     "@gg/ui": "workspace:*",
     "@opentelemetry/api": "^1.9.1",
+    "@stripe/react-stripe-js": "^6.6.0",
+    "@stripe/stripe-js": "^9.8.0",
     "@vercel/otel": "^2.1.2",
     "ioredis": "^5.11.1",
     "lucide-react": "^0.511.0",

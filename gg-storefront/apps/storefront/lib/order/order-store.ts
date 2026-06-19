@@ -5,6 +5,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface PlacedOrder {
+  id: number; // gg-orders order id — the confirmation page polls its status to terminal
   number: string;
   placedAt: string; // ISO timestamp
   itemCount: number;
@@ -40,11 +41,4 @@ export function useOrderHydrated() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   return hydrated;
-}
-
-export function generateOrderNumber(date = new Date()): string {
-  const n = Math.floor(Math.random() * 100000)
-    .toString()
-    .padStart(5, "0");
-  return `GG-${date.getFullYear()}-${n}`;
 }

@@ -2,16 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Lock } from "lucide-react";
 import { Button, Input } from "@gg/ui";
 import { Stepper } from "./stepper";
+import { StripePaymentStep, type PendingOrder } from "./stripe-payment-step";
 import { useCheckoutStep } from "@/lib/hooks/use-checkout-step";
 import { useCart } from "@/components/cart/cart-provider";
-import {
-  generateOrderNumber,
-  useOrderStore,
-} from "@/lib/order/order-store";
+import { placeOrder } from "@/lib/actions/checkout";
 import { formatPrice } from "@/lib/mock-data";
 
 const STEPS = ["Shipping", "Review", "Payment"];
@@ -29,8 +25,6 @@ type Shipping = {
   zip: string;
   country: string;
 };
-
-type Payment = { cardNumber: string; expiry: string; cvc: string };
 
 const EMPTY_SHIPPING: Shipping = {
   email: "",
@@ -53,31 +47,23 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function CheckoutFlow() {
-  const router = useRouter();
-  const { items, subtotal, clearCart } = useCart();
-  const setLastOrder = useOrderStore((s) => s.setLastOrder);
-
+  const { items, subtotal } = useCart();
   const { current, goTo, next, back } = useCheckoutStep(STEPS.length);
 
   const [shipping, setShipping] = useState<Shipping>(EMPTY_SHIPPING);
-  const [payment, setPayment] = useState<Payment>({
-    cardNumber: "",
-    expiry: "",
-    cvc: "",
-  });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [placing, setPlacing] = useState(false);
 
-  const count = items.reduce((n, i) => n + i.qty, 0);
+  // The order is created (stock reserved + PaymentIntent) when the user enters the payment
+  // step, so its client_secret is ready for Stripe Elements (ADR-021).
+  const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+
   const taxCents = Math.round(subtotal * TAX_RATE);
   const totalCents = subtotal + SHIPPING_CENTS + taxCents;
 
   function setShip(key: keyof Shipping, value: string) {
     setShipping((s) => ({ ...s, [key]: value }));
-    setErrors((e) => ({ ...e, [key]: "" }));
-  }
-  function setPay(key: keyof Payment, value: string) {
-    setPayment((p) => ({ ...p, [key]: value }));
     setErrors((e) => ({ ...e, [key]: "" }));
   }
 
@@ -100,36 +86,29 @@ export function CheckoutFlow() {
     return Object.keys(e).length === 0;
   }
 
-  function validatePayment(): boolean {
-    const e: Record<string, string> = {};
-    if (!/^\d{12,19}$/.test(payment.cardNumber.replace(/\s+/g, "")))
-      e.cardNumber = "Enter a valid card number";
-    if (!/^\d{2}\s*\/\s*\d{2}$/.test(payment.expiry))
-      e.expiry = "MM / YY";
-    if (!/^\d{3,4}$/.test(payment.cvc)) e.cvc = "3–4 digits";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+  // Review → Payment: create the order + PaymentIntent, then advance once we have a client_secret.
+  async function continueToPayment() {
+    setCreating(true);
+    setOrderError(null);
+    const result = await placeOrder(shipping);
+    setCreating(false);
+    if (!result.ok) {
+      setOrderError(result.error);
+      return;
+    }
+    setPendingOrder(result);
+    next();
   }
 
-  function handlePlaceOrder() {
-    if (!validatePayment()) return;
-    setPlacing(true);
-    // Mock payment + order creation (Stripe integration lands in a later phase).
-    window.setTimeout(async () => {
-      setLastOrder({
-        number: generateOrderNumber(),
-        placedAt: new Date().toISOString(),
-        itemCount: count,
-        totalCents,
-        email: shipping.email,
-      });
-      await clearCart(); // empties the Redis-backed cart before confirming
-      router.push("/checkout/confirmation");
-    }, 1500);
+  // Leaving payment abandons the created order (its reservation is swept after TTL, D3); the next
+  // forward pass creates a fresh one.
+  function backFromPayment() {
+    setPendingOrder(null);
+    back();
   }
 
-  // Empty-cart guard (skipped while an order is being placed).
-  if (items.length === 0 && !placing) {
+  // Empty-cart guard (skipped once an order has been created and we're on the payment step).
+  if (items.length === 0 && !pendingOrder) {
     return (
       <div className="flex flex-col items-center gap-4 border border-dashed border-border bg-surface/40 px-6 py-20 text-center">
         <p className="font-display text-[15px] font-bold uppercase tracking-[0.08em] text-fg-1">
@@ -277,70 +256,36 @@ export function CheckoutFlow() {
                 <p className="mb-1.5 font-display text-[9px] uppercase tracking-[0.15em] text-primary">
                   Ship To
                 </p>
-                <p className="font-body text-[13px] text-fg-2">
-                  {shipTo || "—"}
-                </p>
+                <p className="font-body text-[13px] text-fg-2">{shipTo || "—"}</p>
               </div>
 
+              {orderError && (
+                <p
+                  className="mt-4 border border-danger bg-danger-muted px-3 py-2 font-body text-[12px] text-danger"
+                  role="alert"
+                >
+                  {orderError}
+                </p>
+              )}
+
               <div className="mt-6 flex gap-3">
-                <Button variant="secondary" onClick={back}>
+                <Button variant="secondary" onClick={back} disabled={creating}>
                   ← Back
                 </Button>
-                <Button size="lg" onClick={next}>
-                  Continue to Payment →
+                <Button size="lg" loading={creating} onClick={continueToPayment}>
+                  {creating ? "Reserving…" : "Continue to Payment →"}
                 </Button>
               </div>
             </Stepper.Panel>
 
-            {/* Step 3 — Payment */}
+            {/* Step 3 — Payment (Stripe Elements) */}
             <Stepper.Panel index={2}>
               <SectionLabel>Payment</SectionLabel>
-              <div className="clip-cyber-sm border border-border bg-elevated p-5">
-                <p className="mb-4 flex items-center gap-2 font-display text-[9px] uppercase tracking-[0.15em] text-primary">
-                  <Lock size={11} /> Secure Payment · Test Mode
-                </p>
-                <div className="grid gap-4">
-                  <Input
-                    label="Card Number"
-                    placeholder="4242 4242 4242 4242"
-                    inputMode="numeric"
-                    value={payment.cardNumber}
-                    error={errors.cardNumber}
-                    onChange={(e) => setPay("cardNumber", e.target.value)}
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="Expiry"
-                      placeholder="MM / YY"
-                      value={payment.expiry}
-                      error={errors.expiry}
-                      onChange={(e) => setPay("expiry", e.target.value)}
-                    />
-                    <Input
-                      label="CVC"
-                      placeholder="•••"
-                      inputMode="numeric"
-                      value={payment.cvc}
-                      error={errors.cvc}
-                      onChange={(e) => setPay("cvc", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex gap-3">
-                <Button variant="secondary" onClick={back} disabled={placing}>
-                  ← Back
-                </Button>
-                <Button
-                  size="lg"
-                  loading={placing}
-                  onClick={handlePlaceOrder}
-                  className="flex-1"
-                >
-                  {placing ? "Processing…" : `Place Order · ${formatPrice(totalCents)}`}
-                </Button>
-              </div>
+              {pendingOrder ? (
+                <StripePaymentStep order={pendingOrder} onBack={backFromPayment} />
+              ) : (
+                <p className="font-body text-[13px] text-fg-2">Preparing payment…</p>
+              )}
             </Stepper.Panel>
           </div>
         </Stepper.Root>

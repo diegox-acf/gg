@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { buttonVariants } from "@gg/ui";
 import { auth } from "@/auth";
 import { Nav } from "@/components/nav/nav";
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -26,6 +28,12 @@ export default async function AccountPage() {
           <Row label="Email" value={email ?? "—"} />
           <Row label="Roles" value={roles.length ? roles.join(", ") : "customer"} />
         </dl>
+
+        <div className="mb-8 flex flex-wrap gap-3">
+          <Link href="/account/orders" className={buttonVariants()}>
+            View orders
+          </Link>
+        </div>
 
         <SignOutButton />
       </main>
