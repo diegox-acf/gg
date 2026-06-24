@@ -43,12 +43,12 @@ import org.springframework.transaction.support.TransactionTemplate;
  * no-op, and the reserve call is idempotent in Inventory — so the Milestone-D3 recovery worker can
  * call it to resume a crashed saga.
  *
- * <p>Payment is <strong>asynchronous</strong> (ADR-020) and <strong>confirmed by the browser</strong>
- * (ADR-021): at PAYING the saga creates an <em>unconfirmed</em> PaymentIntent and returns its
- * {@code client_secret}; the storefront confirms the card with Stripe Elements. The order rests in
- * PAYING until Stripe delivers a webhook, which calls {@link #confirmPayment}/{@link #failPayment}
- * to make the terminal transition. {@link #begin} therefore returns with the order in PAYING on the
- * happy path, not CONFIRMED.
+ * <p>Payment is <strong>asynchronous</strong> (ADR-020) and <strong>confirmed by the
+ * browser</strong> (ADR-021): at PAYING the saga creates an <em>unconfirmed</em> PaymentIntent and
+ * returns its {@code client_secret}; the storefront confirms the card with Stripe Elements. The
+ * order rests in PAYING until Stripe delivers a webhook, which calls {@link #confirmPayment}/{@link
+ * #failPayment} to make the terminal transition. {@link #begin} therefore returns with the order in
+ * PAYING on the happy path, not CONFIRMED.
  */
 @Service
 public class SagaOrchestrator {
@@ -158,7 +158,6 @@ public class SagaOrchestrator {
    */
   public void confirmPayment(long orderId) {
     finishConfirmed(orderId);
-    log.info("order {} CONFIRMED", orderId);
   }
 
   /**
@@ -204,12 +203,19 @@ public class SagaOrchestrator {
     }
     switch (status) {
       case "succeeded" -> confirmPayment(orderId);
+      // Explicitly cancelled — nothing more will arrive, so fail it.
       case "canceled" -> failPayment(orderId, "payment_canceled");
-      // A confirmed-then-declined PaymentIntent falls back to requires_payment_method.
-      case "requires_payment_method" -> failPayment(orderId, "payment_failed");
+      // Anything else (requires_payment_method, requires_action, processing) is the customer still
+      // confirming the card in the browser (ADR-021): leave it in PAYING. A *decline* is reported
+      // by
+      // the payment_intent.payment_failed webhook, not here, and also leaves the intent in
+      // requires_payment_method (which is retryable) — so reconciliation must never fail on that
+      // state. A genuinely abandoned checkout is cleaned up later by the reservation TTL sweeper.
       default ->
           log.info(
-              "recover order {} — PaymentIntent still '{}'; leaving in PAYING", orderId, status);
+              "recover order {} — PaymentIntent '{}'; awaiting customer confirmation, leaving PAYING",
+              orderId,
+              status);
     }
   }
 
@@ -240,6 +246,7 @@ public class SagaOrchestrator {
           guard(orderId, order.getStatus(), CONFIRMED);
           order.setStatus(CONFIRMED);
           emitTerminal(order, "OrderConfirmed", null);
+          log.info("order {} CONFIRMED", orderId);
         });
   }
 
