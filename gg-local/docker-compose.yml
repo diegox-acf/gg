@@ -276,8 +276,12 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres-inventory:5432/gg_inventory
       OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4318
+      # In-network broker (host listener is localhost:9092; container uses kafka:29092)
+      KAFKA_BROKERS: kafka:29092
     depends_on:
       postgres-inventory:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     # NOTE: migrations are run separately (`make -C ../gg-inventory migrate-up`)
     #       against host port 5434, not auto-applied on startup.
@@ -298,8 +302,12 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_LOGS_EXPORTER: otlp
+      # In-network broker (host listener is localhost:9092; container uses kafka:29092)
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
       postgres-orders:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     # Flyway migrations auto-apply on startup (unlike the Go services).
 
