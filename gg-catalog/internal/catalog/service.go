@@ -4,10 +4,16 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path"
+	"strings"
 )
+
+// ErrInvalidProduct flags a product create/update rejected by validation (→ HTTP 400).
+var ErrInvalidProduct = errors.New("invalid product")
 
 type Service struct {
 	repo   Repository
@@ -130,6 +136,71 @@ func (s *Service) DeleteImage(ctx context.Context, id int64) error {
 	}
 	_ = s.images.Delete(ctx, key) // best-effort; metadata is authoritative
 	return nil
+}
+
+// CreateProduct validates and inserts a new product (admin).
+func (s *Service) CreateProduct(ctx context.Context, in ProductWrite) (*Product, error) {
+	norm, err := validateProductWrite(in)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.CreateProduct(ctx, norm)
+}
+
+// UpdateProduct validates and replaces a product's mutable fields (admin). Returns
+// pgx.ErrNoRows (via the repo) when the id does not exist.
+func (s *Service) UpdateProduct(ctx context.Context, id int64, in ProductWrite) (*Product, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("%w: invalid product id", ErrInvalidProduct)
+	}
+	norm, err := validateProductWrite(in)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.UpdateProduct(ctx, id, norm)
+}
+
+// DeleteProduct removes a product (admin). Returns pgx.ErrNoRows when not found.
+func (s *Service) DeleteProduct(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return fmt.Errorf("%w: invalid product id", ErrInvalidProduct)
+	}
+	return s.repo.DeleteProduct(ctx, id)
+}
+
+// validateProductWrite trims, defaults, and checks a product write. Required: sku,
+// slug, name, brand, category_id. Defaults: currency USD, specs {}, stock in-stock.
+func validateProductWrite(in ProductWrite) (ProductWrite, error) {
+	in.SKU = strings.TrimSpace(in.SKU)
+	in.Slug = strings.TrimSpace(in.Slug)
+	in.Name = strings.TrimSpace(in.Name)
+	in.Brand = strings.TrimSpace(in.Brand)
+	in.CategoryID = strings.TrimSpace(in.CategoryID)
+	in.Currency = strings.TrimSpace(in.Currency)
+
+	if in.SKU == "" || in.Slug == "" || in.Name == "" || in.Brand == "" || in.CategoryID == "" {
+		return in, fmt.Errorf("%w: sku, slug, name, brand and category_id are required", ErrInvalidProduct)
+	}
+	if in.PriceCents < 0 {
+		return in, fmt.Errorf("%w: price_cents must be >= 0", ErrInvalidProduct)
+	}
+	if in.Currency == "" {
+		in.Currency = "USD"
+	}
+	if len(in.Specs) == 0 {
+		in.Specs = json.RawMessage("{}")
+	} else if !json.Valid(in.Specs) {
+		return in, fmt.Errorf("%w: specs must be valid JSON", ErrInvalidProduct)
+	}
+	switch in.StockStatus {
+	case "":
+		in.StockStatus = StockStatusInStock
+	case StockStatusInStock, StockStatusLowStock, StockStatusOutOfStock:
+		// ok
+	default:
+		return in, fmt.Errorf("%w: invalid stock_status", ErrInvalidProduct)
+	}
+	return in, nil
 }
 
 func randomHex() string {

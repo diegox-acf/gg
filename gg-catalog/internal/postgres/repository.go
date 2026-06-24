@@ -104,6 +104,46 @@ func (r *Repository) GetProductsByIDs(ctx context.Context, ids []int64) ([]*cata
 	return products, rows.Err()
 }
 
+func (r *Repository) CreateProduct(ctx context.Context, in catalog.ProductWrite) (*catalog.Product, error) {
+	p := &catalog.Product{}
+	err := r.pool.QueryRow(ctx, queryInsertProduct,
+		in.SKU, in.Slug, in.Name, in.Brand, in.Description, in.CategoryID,
+		in.PriceCents, in.Currency, string(in.Specs), in.StockStatus,
+	).Scan(
+		&p.ID, &p.SKU, &p.Slug, &p.Name, &p.Brand, &p.Description,
+		&p.CategoryID, &p.PriceCents, &p.Currency, &p.Specs, &p.StockStatus,
+		&p.CreatedAt, &p.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("create product: %w", err)
+	}
+	return p, nil
+}
+
+func (r *Repository) UpdateProduct(ctx context.Context, id int64, in catalog.ProductWrite) (*catalog.Product, error) {
+	p := &catalog.Product{}
+	err := r.pool.QueryRow(ctx, queryUpdateProduct,
+		id, in.SKU, in.Slug, in.Name, in.Brand, in.Description, in.CategoryID,
+		in.PriceCents, in.Currency, string(in.Specs), in.StockStatus,
+	).Scan(
+		&p.ID, &p.SKU, &p.Slug, &p.Name, &p.Brand, &p.Description,
+		&p.CategoryID, &p.PriceCents, &p.Currency, &p.Specs, &p.StockStatus,
+		&p.CreatedAt, &p.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("update product %d: %w", id, err)
+	}
+	return p, nil
+}
+
+func (r *Repository) DeleteProduct(ctx context.Context, id int64) error {
+	var deleted int64
+	if err := r.pool.QueryRow(ctx, queryDeleteProduct, id).Scan(&deleted); err != nil {
+		return fmt.Errorf("delete product %d: %w", id, err)
+	}
+	return nil
+}
+
 func (r *Repository) ListCategories(ctx context.Context) ([]*catalog.Category, error) {
 	rows, err := r.pool.Query(ctx, queryListCategories)
 	if err != nil {

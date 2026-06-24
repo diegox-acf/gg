@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { Plus, Pencil } from "lucide-react";
 import { fetchProducts } from "@/lib/catalog/client";
 import { formatCents } from "@/lib/format";
 import { StockStatusBadge } from "@/components/admin/stock-status-badge";
+import { DeleteProductButton } from "@/components/admin/delete-product-button";
 
 // Read-only catalog view. The catalog list API paginates by opaque token rather than
 // page number, so this shows a generous first page (the catalog is a few hundred items).
@@ -17,9 +20,17 @@ export default async function ProductsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-[22px] font-extrabold uppercase tracking-[0.06em] text-fg-1">
-        Products
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-[22px] font-extrabold uppercase tracking-[0.06em] text-fg-1">
+          Products
+        </h1>
+        <Link
+          href="/products/new"
+          className="inline-flex items-center gap-2 border border-primary bg-primary/10 px-4 py-2 font-display text-[11px] font-semibold uppercase tracking-[0.1em] text-primary transition-colors hover:bg-primary/20 clip-cyber-btn"
+        >
+          <Plus className="size-4" /> New product
+        </Link>
+      </div>
 
       {error ? (
         <p className="mt-6 border border-danger/40 bg-danger/10 px-4 py-3 font-body text-[13px] text-danger">
@@ -39,12 +50,13 @@ export default async function ProductsPage() {
                   <th className="px-4 py-3 font-semibold">Brand</th>
                   <th className="px-4 py-3 text-right font-semibold">Price</th>
                   <th className="px-4 py-3 font-semibold">Stock</th>
+                  <th className="px-4 py-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="font-body text-[13px] text-fg-1">
                 {!products || products.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-fg-3">
+                    <td colSpan={6} className="px-4 py-8 text-center text-fg-3">
                       No products.
                     </td>
                   </tr>
@@ -64,6 +76,18 @@ export default async function ProductsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <StockStatusBadge status={p.stock_status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-3">
+                          <Link
+                            href={`/products/${p.id}/edit`}
+                            aria-label={`Edit ${p.name}`}
+                            className="text-fg-3 transition-colors hover:text-primary"
+                          >
+                            <Pencil className="size-4" />
+                          </Link>
+                          <DeleteProductButton productId={p.id} />
+                        </div>
                       </td>
                     </tr>
                   ))

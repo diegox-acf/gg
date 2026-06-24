@@ -42,6 +42,25 @@ SELECT p.id, p.sku, p.slug, p.name, p.brand, p.description, p.category_id,
 FROM products p` + primaryImageJoin + `
 WHERE p.id = ANY($1)`
 
+// Admin write columns returned by create/update (no image join — a write response
+// carries no primary-image URL; the admin UI re-lists to pick images up).
+const productWriteCols = `id, sku, slug, name, brand, description, category_id,
+	price_cents, currency, specs, stock_status, created_at, updated_at`
+
+const queryInsertProduct = `
+INSERT INTO products (sku, slug, name, brand, description, category_id, price_cents, currency, specs, stock_status)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10)
+RETURNING ` + productWriteCols
+
+const queryUpdateProduct = `
+UPDATE products
+SET sku = $2, slug = $3, name = $4, brand = $5, description = $6, category_id = $7,
+    price_cents = $8, currency = $9, specs = $10::jsonb, stock_status = $11, updated_at = NOW()
+WHERE id = $1
+RETURNING ` + productWriteCols
+
+const queryDeleteProduct = `DELETE FROM products WHERE id = $1 RETURNING id`
+
 const queryListCategories = `
 SELECT id, slug, label, icon, created_at
 FROM categories
