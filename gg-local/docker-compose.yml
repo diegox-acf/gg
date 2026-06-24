@@ -9,8 +9,8 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: gg_catalog
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_catalog_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,8 +25,8 @@ services:
       - "5433:5432"
     environment:
       POSTGRES_DB: gg_orders
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_orders_data:/var/lib/postgresql/data
     healthcheck:
@@ -41,8 +41,8 @@ services:
       - "5434:5432"
     environment:
       POSTGRES_DB: gg_inventory
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_inventory_data:/var/lib/postgresql/data
     healthcheck:
@@ -57,8 +57,8 @@ services:
       - "5435:5432"
     environment:
       POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak
+      POSTGRES_USER: ${KEYCLOAK_DB_USER:-keycloak}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
     volumes:
       - postgres_keycloak_data:/var/lib/postgresql/data
     healthcheck:
@@ -79,13 +79,13 @@ services:
       - "8081:8080"    # 8080 is the catalog service
     environment:
       # Bootstrap admin (26.x env names; creates the master-realm admin)
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       # Persist to Postgres so registered users survive restarts
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: keycloak
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER:-keycloak}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
@@ -167,6 +167,7 @@ services:
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$$BS" --list
     restart: "no"
 
+  # Kafka data/topics browser → http://localhost:8090
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
@@ -176,6 +177,36 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
     depends_on:
       kafka:
+        condition: service_healthy
+
+  # ───────────────────────────────────────────────────────────────
+  # Data inspection UIs (dev tooling) — browse Postgres / Redis / Kafka
+  # Kafka → Kafka UI above (:8090).
+  # ───────────────────────────────────────────────────────────────
+
+  # Postgres browser → http://localhost:8091. Log in with the POSTGRES_USER/PASSWORD;
+  # switch "Server" to postgres-catalog / postgres-inventory / postgres-orders /
+  # postgres-keycloak to inspect each service's private DB.
+  adminer:
+    image: adminer:5
+    ports:
+      - "8091:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres-catalog
+    depends_on:
+      - postgres-catalog
+      - postgres-inventory
+      - postgres-orders
+
+  # Redis browser → http://localhost:8092 (auto-connects to the cart/session Redis).
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8092:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      redis:
         condition: service_healthy
 
   # ───────────────────────────────────────────────────────────────
@@ -255,7 +286,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres-catalog:5432/gg_catalog
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres-catalog:5432/gg_catalog
       IMAGE_STORE_TYPE: local
       IMAGE_STORE_PATH: /data/images
       IMAGE_BASE_URL: http://localhost:8080
@@ -274,7 +305,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres-inventory:5432/gg_inventory
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres-inventory:5432/gg_inventory
       OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4318
       # In-network broker (host listener is localhost:9092; container uses kafka:29092)
       KAFKA_BROKERS: kafka:29092
@@ -294,9 +325,12 @@ services:
       - "8083:8083"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-orders:5432/gg_orders
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       CATALOG_BASE_URL: http://catalog:8080
+      # Stripe test-mode keys (checkout payment + webhook signature verification)
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       # OpenTelemetry Java agent → collector (traces + metrics + logs)
       OTEL_SERVICE_NAME: gg-orders
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
@@ -324,11 +358,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      AUTH_SECRET: dev-insecure-secret-change-me
+      AUTH_SECRET: ${AUTH_SECRET:-dev-insecure-secret-change-me}
       # Server-side calls to Keycloak/services use in-network hostnames.
       KEYCLOAK_ISSUER: http://keycloak:8080/realms/gg
       KEYCLOAK_CLIENT_ID: gg-storefront
-      KEYCLOAK_CLIENT_SECRET: gg-storefront-dev-secret
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-gg-storefront-dev-secret}
       CATALOG_API_URL: http://catalog:8080
       ORDERS_API_URL: http://orders:8083
       REDIS_URL: redis://redis:6379
@@ -353,10 +387,10 @@ services:
     ports:
       - "3002:3002"
     environment:
-      AUTH_SECRET: dev-insecure-secret-change-me
+      AUTH_SECRET: ${AUTH_SECRET:-dev-insecure-secret-change-me}
       KEYCLOAK_ISSUER: http://keycloak:8080/realms/gg
       KEYCLOAK_CLIENT_ID: gg-storefront
-      KEYCLOAK_CLIENT_SECRET: gg-storefront-dev-secret
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-gg-storefront-dev-secret}
       CATALOG_API_URL: http://catalog:8080
       INVENTORY_API_URL: http://inventory:8082
       ORDERS_API_URL: http://orders:8083
