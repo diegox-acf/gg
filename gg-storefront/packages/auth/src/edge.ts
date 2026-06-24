@@ -19,6 +19,11 @@ export function createEdgeAuthConfig({
   authorized: AuthorizedCallback;
 }): NextAuthConfig {
   return {
+    // Trust the deployment host. In dev (`next dev`) Auth.js trusts localhost
+    // automatically, but in production (`next start`, i.e. the containers) it does
+    // not — without this the middleware throws UntrustedHost. Set here (the edge
+    // base) so both the middleware and the full node config inherit it.
+    trustHost: true,
     pages: { signIn: "/login" },
     providers: [],
     callbacks: {

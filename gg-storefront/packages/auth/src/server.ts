@@ -63,9 +63,8 @@ export function createAuthConfig({
 }): NextAuthConfig {
   const base = createEdgeAuthConfig({ authorized });
   return {
-    ...base,
+    ...base, // includes trustHost
     session: { strategy: "jwt" },
-    trustHost: true,
     providers: [credentialsProvider()],
     callbacks: {
       ...base.callbacks,
