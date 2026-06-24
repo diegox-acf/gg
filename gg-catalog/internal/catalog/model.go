@@ -55,3 +55,18 @@ type ListProductsFilter struct {
 	PageSize   int32
 	PageToken  string
 }
+
+// ProductWrite is the mutable field set for creating or updating a product (admin).
+// id, timestamps, and images are managed elsewhere.
+type ProductWrite struct {
+	SKU         string          `json:"sku"`
+	Slug        string          `json:"slug"`
+	Name        string          `json:"name"`
+	Brand       string          `json:"brand"`
+	Description string          `json:"description"`
+	CategoryID  string          `json:"category_id"`
+	PriceCents  int64           `json:"price_cents"`
+	Currency    string          `json:"currency"`
+	Specs       json.RawMessage `json:"specs"`
+	StockStatus StockStatus     `json:"stock_status"`
+}

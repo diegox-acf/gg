@@ -810,3 +810,66 @@ data.** Concretely, splitting Milestone E by tier (E1 backend, E2 storefront):
 - **Confirm with a PaymentMethod id collected client-side but confirmed server-side:**
   Rejected. Pulls card-adjacent handling back toward the backend for no benefit over
   Elements' `confirmPayment`.
+
+## ADR-022: Admin console — separate app, shared `@gg/auth`, BFF-forwarded role RBAC
+
+**Status:** Accepted
+**Date:** 2026-06-24
+
+**Context:**
+Phase 5 (extensions) begins with an **admin dashboard** (per `05-roadmap.md`). Phase 4
+(hardening) was deliberately deferred. The platform had no admin surface and **no RBAC
+enforcement anywhere**, even though the `gg` realm already defines an `admin` realm role
+(ADR-017) that flows through to `session.user.roles`. The first milestone is a
+**read-only operations console**: dashboard metrics, browse/search all orders, order
+detail, and stock levels. Mutations (product CRUD, restock, cancel/refund) are a later
+milestone. Three structural decisions were needed: where the app lives, how auth is
+shared, and how admin-only access is enforced across services.
+
+**Decision:**
+
+- **Separate Next.js app** `gg-storefront/apps/admin` (port 3002 — 3001 is Grafana) in the existing
+  Turborepo — not an `/admin` route inside the storefront. Keeps customer and operator
+  concerns isolated and is the multi-app monorepo exercise the roadmap intends.
+- **Shared `@gg/auth` package.** The reusable auth core (Keycloak password-grant/refresh/
+  claim-decode client, the NextAuth `createAuthConfig`/`createEdgeAuthConfig` factory, and
+  the next-auth type augmentation) is extracted from the storefront into `@gg/auth` and
+  consumed by both apps. Each app supplies its own `authorized` rule: the storefront gates
+  a few prefixes; the admin app gates the **whole app** to the `admin` role (edge
+  middleware for UX + a server-component layout check as the authoritative gate).
+  Registration (Keycloak Admin API) stays storefront-only. An `admin`/`admin12345` user
+  with the `admin` role is seeded in the realm export; the admin app reuses the existing
+  `gg-storefront` Keycloak client.
+- **RBAC via a BFF-forwarded `X-User-Roles` header.** The BFF remains the **trust
+  boundary** (it validates the Keycloak session), and forwards the caller's realm roles as
+  a comma-separated `X-User-Roles` header — mirroring the existing `X-User-Id` pattern.
+  New backend admin endpoints live under `/admin/**` and return **403 unless the header
+  contains `admin`**: Orders via a Spring `HandlerInterceptor` on `/admin/**`, Inventory
+  via a chi middleware on its `/admin` subrouter. New read endpoints: Orders
+  `GET /admin/orders` (paginated, status/date filters) + `GET /admin/orders/stats`;
+  Inventory `GET /admin/stock` (paginated, low-stock filter). Catalog needs nothing new —
+  the admin product list reuses the existing public reads.
+
+**Consequences:**
+- One auth definition for both apps; the storefront refactor is behavior-preserving
+  (verified by typecheck + build, edge middleware stays free of `server-only`).
+- Admin endpoints are consistently shaped (`{"error": …}`, snake_case, the same
+  pagination envelope) and independently testable (role guard + queries).
+- **Known limitation (accepted for now):** because the backend trusts a BFF-set header, a
+  caller with direct network access to a service can forge `X-User-Roles` and reach the
+  admin endpoints. This is the *same* trust model already in force for `X-User-Id`
+  (Inventory has no auth; Orders trusts the id header) and is acceptable on the
+  compose-only network (ADR-013). Hardening — validating the Keycloak JWT and roles in the
+  backends themselves (Catalog already validates the token, ADR-017) — is deferred to a
+  future ADR if/when these services are exposed beyond the local network.
+
+**Alternatives considered:**
+- **`/admin` route inside the storefront:** Rejected. Faster (reuses auth/middleware) but
+  mixes operator and customer concerns in one deployable and skips the separate-app
+  learning the roadmap calls for.
+- **Backend JWT validation now (roles from a verified token, not a header):** Rejected for
+  this milestone. More robust, but inconsistent to retrofit onto only the admin paths
+  while the rest of the system trusts BFF headers; better done uniformly later.
+- **A dedicated `gg-admin` Keycloak client:** Deferred. Reusing the `gg-storefront` client
+  (password grant) is enough for a single seeded admin user; a separate client/o-auth flow
+  is warranted only when admin auth diverges from the storefront's.

@@ -1,6 +1,18 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "AUTH_SECRET",
+    "KEYCLOAK_ISSUER",
+    "KEYCLOAK_CLIENT_ID",
+    "KEYCLOAK_CLIENT_SECRET",
+    "CATALOG_API_URL",
+    "INVENTORY_API_URL",
+    "ORDERS_API_URL",
+    "REDIS_URL",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+    "OTEL_EXPORTER_OTLP_ENDPOINT"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

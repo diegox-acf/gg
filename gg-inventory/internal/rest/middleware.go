@@ -3,11 +3,40 @@ package rest
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
+
+const (
+	rolesHeader = "X-User-Roles"
+	adminRole   = "admin"
+)
+
+// RequireAdmin gates the /admin routes. Inventory has no auth of its own; the BFF is
+// the trust boundary and forwards the caller's Keycloak realm roles as a comma-separated
+// X-User-Roles header (mirroring the X-User-Id pattern used elsewhere). A request without
+// the admin role gets 403. See ADR-022 for the trust model and its known limitation.
+func RequireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !hasRole(r.Header.Get(rolesHeader), adminRole) {
+			writeError(w, http.StatusForbidden, "admin role required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func hasRole(header, role string) bool {
+	for _, part := range strings.Split(header, ",") {
+		if strings.EqualFold(strings.TrimSpace(part), role) {
+			return true
+		}
+	}
+	return false
+}
 
 func OTelMiddleware(next http.Handler) http.Handler {
 	return otelhttp.NewHandler(next, "http")

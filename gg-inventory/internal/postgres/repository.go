@@ -24,6 +24,7 @@ const (
 	eventStockCommitted = "StockCommitted"
 	eventStockReleased  = "StockReleased"
 	eventStockExpired   = "StockExpired"
+	eventStockRestocked = "StockRestocked"
 
 	topicStockReserved = "inventory.stock-reserved"
 	topicStockReleased = "inventory.stock-released"
@@ -45,6 +46,70 @@ func (r *Repository) GetStock(ctx context.Context, productID int64) (*inventory.
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get stock %d: %w", productID, err)
+	}
+	return s, nil
+}
+
+// ListStock returns a page of stock rows plus the total count (admin console).
+func (r *Repository) ListStock(ctx context.Context, f inventory.StockListFilter) (*inventory.StockPage, error) {
+	var total int
+	if err := r.pool.QueryRow(ctx, queryCountStock, f.LowStock, f.Threshold).Scan(&total); err != nil {
+		return nil, fmt.Errorf("count stock: %w", err)
+	}
+
+	rows, err := r.pool.Query(ctx, queryListStock, f.LowStock, f.Threshold, f.Limit, f.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("list stock: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*inventory.Stock, 0)
+	for rows.Next() {
+		s := &inventory.Stock{}
+		if err := rows.Scan(&s.ProductID, &s.Available, &s.Reserved, &s.Version, &s.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan stock: %w", err)
+		}
+		items = append(items, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return &inventory.StockPage{Items: items, Total: total}, nil
+}
+
+// Restock increases a product's available stock by quantity in a single transaction
+// (optimistic-lock CAS) and writes a StockRestocked outbox event. Returns the updated
+// stock. A product with no stock row yields pgx.ErrNoRows (handler → 404).
+func (r *Repository) Restock(ctx context.Context, productID int64, quantity int) (*inventory.Stock, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var exists int
+	if err := tx.QueryRow(ctx, queryStockExists, productID).Scan(&exists); err != nil {
+		return nil, fmt.Errorf("check stock %d: %w", productID, err) // pgx.ErrNoRows = unknown product
+	}
+
+	// available += quantity, reserved unchanged.
+	if err := r.applyStockDelta(ctx, tx, productID, quantity, 0); err != nil {
+		return nil, err
+	}
+
+	s := &inventory.Stock{}
+	if err := tx.QueryRow(ctx, queryGetStock, productID).Scan(
+		&s.ProductID, &s.Available, &s.Reserved, &s.Version, &s.UpdatedAt,
+	); err != nil {
+		return nil, fmt.Errorf("reread stock %d: %w", productID, err)
+	}
+
+	if err := writeStockOutbox(ctx, tx, s, eventStockRestocked, topicStockReleased, quantity); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
 	}
 	return s, nil
 }
@@ -272,6 +337,29 @@ func writeOutbox(ctx context.Context, tx pgx.Tx, aggregateID int64, eventType, t
 		nullable(traceIDFromContext(ctx)), nullable(traceparentFromContext(ctx)),
 	); err != nil {
 		return fmt.Errorf("write outbox %s: %w", eventType, err)
+	}
+	return nil
+}
+
+// writeStockOutbox appends a stock-level event (e.g. StockRestocked) in the same
+// transaction as the stock mutation (transactional outbox, ADR-006). aggregate_id is
+// the product id; the payload carries the post-change levels and the applied delta.
+func writeStockOutbox(ctx context.Context, tx pgx.Tx, s *inventory.Stock, eventType, topic string, delta int) error {
+	payload, err := json.Marshal(map[string]any{
+		"product_id": s.ProductID,
+		"available":  s.Available,
+		"reserved":   s.Reserved,
+		"delta":      delta,
+	})
+	if err != nil {
+		return fmt.Errorf("marshal stock outbox payload: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx, queryInsertStockOutbox,
+		s.ProductID, eventType, topic, string(payload),
+		nullable(traceIDFromContext(ctx)), nullable(traceparentFromContext(ctx)),
+	); err != nil {
+		return fmt.Errorf("write stock outbox %s: %w", eventType, err)
 	}
 	return nil
 }

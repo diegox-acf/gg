@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@gg/ui"],
+  transpilePackages: ["@gg/ui", "@gg/auth"],
   images: {
     // Product images are served by the catalog's local image store.
     remotePatterns: [

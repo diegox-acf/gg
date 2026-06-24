@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -46,6 +47,14 @@ func NewRouter(logger *slog.Logger, svc *catalog.Service, imageHandler http.Hand
 		r.Get("/products/{id}/images", listImagesHandler(svc))
 		r.Post("/products/{id}/images", uploadImageHandler(svc))
 		r.Delete("/images/{id}", deleteImageHandler(svc))
+
+		// Admin product writes (gg-admin console). Guarded by the admin role (ADR-022).
+		r.Group(func(r chi.Router) {
+			r.Use(RequireAdmin)
+			r.Post("/products", createProductHandler(svc))
+			r.Put("/products/{id}", updateProductHandler(svc))
+			r.Delete("/products/{id}", deleteProductHandler(svc))
+		})
 	})
 
 	return r
@@ -212,6 +221,87 @@ func deleteImageHandler(svc *catalog.Service) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+func createProductHandler(svc *catalog.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var in catalog.ProductWrite
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		p, err := svc.CreateProduct(r.Context(), in)
+		if err != nil {
+			writeProductWriteError(w, err, "failed to create product")
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"product": p})
+	}
+}
+
+func updateProductHandler(svc *catalog.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid product id")
+			return
+		}
+		var in catalog.ProductWrite
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		p, err := svc.UpdateProduct(r.Context(), id, in)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "product not found")
+				return
+			}
+			writeProductWriteError(w, err, "failed to update product")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"product": p})
+	}
+}
+
+func deleteProductHandler(svc *catalog.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid product id")
+			return
+		}
+		if err := svc.DeleteProduct(r.Context(), id); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "product not found")
+				return
+			}
+			writeError(w, http.StatusInternalServerError, "failed to delete product")
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// writeProductWriteError maps product create/update failures: validation → 400,
+// duplicate sku/slug → 409, unknown category_id → 422, else 500.
+func writeProductWriteError(w http.ResponseWriter, err error, fallback string) {
+	if errors.Is(err, catalog.ErrInvalidProduct) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case "23505": // unique_violation
+			writeError(w, http.StatusConflict, "a product with that sku or slug already exists")
+			return
+		case "23503": // foreign_key_violation
+			writeError(w, http.StatusUnprocessableEntity, "unknown category_id")
+			return
+		}
+	}
+	writeError(w, http.StatusInternalServerError, fallback)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

@@ -141,6 +141,9 @@ Reservation is **synchronous REST**, terminal commit/release is **Kafka** — se
 
 ## Phase 4 — Hardening and polish (Week 5)
 
+> **Status: deferred** (decision 2026-06-24). Phase 4 is skipped for now in favor of
+> Phase 5 extensions (admin dashboard first). Revisit before any real launch.
+
 **Goal:** The system is demonstrably robust and observable.
 
 **Deliverables:**
@@ -161,7 +164,12 @@ Reservation is **synchronous REST**, terminal commit/release is **Kafka** — se
 
 Pick from this list based on remaining time and what you want to learn next:
 
-- **Admin dashboard** (Next.js, separate app in monorepo)
+- **Admin dashboard** (Next.js, separate app in monorepo) — **🔄 in progress** (ADR-022).
+  Milestone 1 (read-only ops console) built: `apps/admin` (port 3002) gated to the
+  `admin` role, shared `@gg/auth` package, backend admin read endpoints + `X-User-Roles`
+  RBAC (Orders `/admin/orders`+`/stats`, Inventory `/admin/stock`). Dashboard, orders
+  list/detail, inventory, and products pages wired to live data. Code/tests/build green;
+  live end-to-end demo (Keycloak admin user re-import + full stack) pending.
 - **Notifications service** (Node.js): real email via SES
 - **Search service** (Go): OpenSearch integration
 - **Separate Payments service** (Java): extract from Orders, practice service decomposition

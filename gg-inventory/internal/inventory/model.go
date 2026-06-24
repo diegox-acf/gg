@@ -49,3 +49,18 @@ type ReserveRequest struct {
 	Items          []ReservationItem `json:"items"`
 	IdempotencyKey string            `json:"idempotency_key"`
 }
+
+// StockListFilter parameterizes the admin stock listing (paginated, optional
+// low-stock filter). LowStock restricts to rows with available <= Threshold.
+type StockListFilter struct {
+	LowStock  bool
+	Threshold int
+	Limit     int
+	Offset    int
+}
+
+// StockPage is one page of stock rows plus the unpaged total (for the admin UI).
+type StockPage struct {
+	Items []*Stock
+	Total int
+}

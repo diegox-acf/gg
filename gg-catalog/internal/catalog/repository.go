@@ -11,6 +11,12 @@ type Repository interface {
 	GetProductsByIDs(ctx context.Context, ids []int64) ([]*Product, error)
 	ListCategories(ctx context.Context) ([]*Category, error)
 
+	// Admin writes. CreateProduct returns the new row; UpdateProduct/DeleteProduct
+	// return pgx.ErrNoRows when the id does not exist.
+	CreateProduct(ctx context.Context, in ProductWrite) (*Product, error)
+	UpdateProduct(ctx context.Context, id int64, in ProductWrite) (*Product, error)
+	DeleteProduct(ctx context.Context, id int64) error
+
 	SaveImage(ctx context.Context, img *ProductImage) (*ProductImage, error)
 	ListImages(ctx context.Context, productID int64) ([]*ProductImage, error)
 	DeleteImage(ctx context.Context, id int64) (key string, err error)

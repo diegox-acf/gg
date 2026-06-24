@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@auth/core": "0.41.2",
+    "@gg/auth": "workspace:*",
     "@gg/types": "workspace:*",
     "@gg/ui": "workspace:*",
     "@opentelemetry/api": "^1.9.1",
