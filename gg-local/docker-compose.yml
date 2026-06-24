@@ -311,6 +311,67 @@ services:
         condition: service_healthy
     # Flyway migrations auto-apply on startup (unlike the Go services).
 
+  # ── Next.js apps (BFFs). One generic Dockerfile, selected via the APP build arg. ──
+
+  storefront:
+    build:
+      context: ../gg-storefront
+      dockerfile: Dockerfile
+      args:
+        APP: storefront
+        # Optional: pass through a pk_test_ key so checkout works (inlined at build).
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+    ports:
+      - "3000:3000"
+    environment:
+      AUTH_SECRET: dev-insecure-secret-change-me
+      # Server-side calls to Keycloak/services use in-network hostnames.
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/gg
+      KEYCLOAK_CLIENT_ID: gg-storefront
+      KEYCLOAK_CLIENT_SECRET: gg-storefront-dev-secret
+      CATALOG_API_URL: http://catalog:8080
+      ORDERS_API_URL: http://orders:8083
+      REDIS_URL: redis://redis:6379
+      OTEL_SERVICE_NAME: gg-storefront-bff
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    depends_on:
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      catalog:
+        condition: service_started
+      orders:
+        condition: service_started
+
+  admin:
+    build:
+      context: ../gg-storefront
+      dockerfile: Dockerfile
+      args:
+        APP: admin
+    ports:
+      - "3002:3002"
+    environment:
+      AUTH_SECRET: dev-insecure-secret-change-me
+      KEYCLOAK_ISSUER: http://keycloak:8080/realms/gg
+      KEYCLOAK_CLIENT_ID: gg-storefront
+      KEYCLOAK_CLIENT_SECRET: gg-storefront-dev-secret
+      CATALOG_API_URL: http://catalog:8080
+      INVENTORY_API_URL: http://inventory:8082
+      ORDERS_API_URL: http://orders:8083
+      OTEL_SERVICE_NAME: gg-admin-bff
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    depends_on:
+      keycloak:
+        condition: service_started
+      catalog:
+        condition: service_started
+      inventory:
+        condition: service_started
+      orders:
+        condition: service_started
+
 volumes:
   postgres_catalog_data:
   postgres_orders_data:

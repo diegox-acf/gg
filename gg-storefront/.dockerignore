@@ -1,0 +1,12 @@
+# Keep the build context small and the image clean. Deps are reinstalled in-image
+# from the lockfile, and each app is rebuilt — never copy host artifacts/secrets.
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+.git
+.github
+**/.env
+**/.env.*
+**/*.log
+**/.DS_Store
