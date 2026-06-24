@@ -18,6 +18,11 @@ func (s *stubRepo) GetStock(context.Context, int64) (*Stock, error) {
 	return &Stock{}, nil
 }
 
+func (s *stubRepo) ListStock(context.Context, StockListFilter) (*StockPage, error) {
+	s.called = true
+	return &StockPage{}, nil
+}
+
 func (s *stubRepo) Reserve(context.Context, ReserveRequest) ([]*Reservation, error) {
 	s.called = true
 	return []*Reservation{s.reservation}, nil

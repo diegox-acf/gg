@@ -14,6 +14,19 @@ const (
 		FROM stock
 		WHERE product_id = $1`
 
+	// Admin stock listing. $1 = low-stock flag, $2 = threshold (applied only when $1):
+	// "$1 = false OR available <= $2" passes all rows unless the low-stock filter is on.
+	queryListStock = `
+		SELECT product_id, available, reserved, version, updated_at
+		FROM stock
+		WHERE ($1 = false OR available <= $2)
+		ORDER BY product_id
+		LIMIT $3 OFFSET $4`
+
+	queryCountStock = `
+		SELECT COUNT(*) FROM stock
+		WHERE ($1 = false OR available <= $2)`
+
 	// Optimistic read: no row lock. The CAS UPDATE below guards on the version
 	// we read here; a concurrent writer bumps version and our UPDATE matches 0 rows.
 	querySelectStock = `

@@ -35,6 +35,12 @@ func NewRouter(logger *slog.Logger, svc *inventory.Service) *chi.Mux {
 		r.Post("/reservations/{reservation_id}/release", releaseReservationHandler(svc))
 	})
 
+	// Admin read API (gg-admin console). Guarded by the admin role (ADR-022).
+	r.Route("/admin", func(r chi.Router) {
+		r.Use(RequireAdmin)
+		r.Get("/stock", listStockHandler(svc))
+	})
+
 	return r
 }
 
@@ -110,6 +116,58 @@ func releaseReservationHandler(svc *inventory.Service) http.HandlerFunc {
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"reservation": res})
 	}
+}
+
+// listStockHandler serves the admin stock list: paginated, newest product first,
+// with an optional low-stock filter (available <= threshold, default 5).
+func listStockHandler(svc *inventory.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		lowStock := q.Get("low_stock") == "true"
+		threshold := parseIntDefault(q.Get("threshold"), 5)
+		page := parseIntDefault(q.Get("page"), 0)
+		if page < 0 {
+			page = 0
+		}
+		size := parseIntDefault(q.Get("size"), 20)
+		if size < 1 {
+			size = 1
+		}
+		if size > 100 {
+			size = 100
+		}
+
+		result, err := svc.ListStock(r.Context(), inventory.StockListFilter{
+			LowStock:  lowStock,
+			Threshold: threshold,
+			Limit:     size,
+			Offset:    page * size,
+		})
+		if err != nil {
+			writeDomainError(w, err, "failed to list stock")
+			return
+		}
+
+		totalPages := (result.Total + size - 1) / size
+		writeJSON(w, http.StatusOK, map[string]any{
+			"items":          result.Items,
+			"page":           page,
+			"size":           size,
+			"total_elements": result.Total,
+			"total_pages":    totalPages,
+		})
+	}
+}
+
+func parseIntDefault(s string, def int) int {
+	if s == "" {
+		return def
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil {
+		return def
+	}
+	return v
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

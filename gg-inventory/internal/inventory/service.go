@@ -23,6 +23,14 @@ func (s *Service) GetStock(ctx context.Context, productID int64) (*Stock, error)
 	return s.repo.GetStock(ctx, productID)
 }
 
+// ListStock returns a page of stock rows for the admin console. Read-only.
+func (s *Service) ListStock(ctx context.Context, filter StockListFilter) (*StockPage, error) {
+	if filter.Threshold < 0 {
+		return nil, fmt.Errorf("%w: threshold must not be negative", ErrInvalidRequest)
+	}
+	return s.repo.ListStock(ctx, filter)
+}
+
 // Reserve validates the request and delegates the atomic reservation to the repo.
 func (s *Service) Reserve(ctx context.Context, req ReserveRequest) ([]*Reservation, error) {
 	if req.OrderID <= 0 {

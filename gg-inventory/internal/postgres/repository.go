@@ -49,6 +49,33 @@ func (r *Repository) GetStock(ctx context.Context, productID int64) (*inventory.
 	return s, nil
 }
 
+// ListStock returns a page of stock rows plus the total count (admin console).
+func (r *Repository) ListStock(ctx context.Context, f inventory.StockListFilter) (*inventory.StockPage, error) {
+	var total int
+	if err := r.pool.QueryRow(ctx, queryCountStock, f.LowStock, f.Threshold).Scan(&total); err != nil {
+		return nil, fmt.Errorf("count stock: %w", err)
+	}
+
+	rows, err := r.pool.Query(ctx, queryListStock, f.LowStock, f.Threshold, f.Limit, f.Offset)
+	if err != nil {
+		return nil, fmt.Errorf("list stock: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*inventory.Stock, 0)
+	for rows.Next() {
+		s := &inventory.Stock{}
+		if err := rows.Scan(&s.ProductID, &s.Available, &s.Reserved, &s.Version, &s.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan stock: %w", err)
+		}
+		items = append(items, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return &inventory.StockPage{Items: items, Total: total}, nil
+}
+
 // Reserve reserves every item atomically (single transaction). Replaying the same
 // idempotency key returns the existing reservations without touching stock.
 func (r *Repository) Reserve(ctx context.Context, req inventory.ReserveRequest) ([]*inventory.Reservation, error) {
