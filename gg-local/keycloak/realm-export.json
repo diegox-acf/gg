@@ -57,6 +57,18 @@
         { "type": "password", "value": "demo12345", "temporary": false }
       ],
       "realmRoles": ["customer"]
+    },
+    {
+      "username": "admin",
+      "email": "admin@gg.dev",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Store",
+      "lastName": "Admin",
+      "credentials": [
+        { "type": "password", "value": "admin12345", "temporary": false }
+      ],
+      "realmRoles": ["admin"]
     }
   ]
 }

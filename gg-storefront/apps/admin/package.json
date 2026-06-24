@@ -1,0 +1,35 @@
+{
+  "name": "admin",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "next lint",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@auth/core": "0.41.2",
+    "@gg/auth": "workspace:*",
+    "@gg/types": "workspace:*",
+    "@gg/ui": "workspace:*",
+    "@opentelemetry/api": "^1.9.1",
+    "@vercel/otel": "^2.1.2",
+    "lucide-react": "^0.511.0",
+    "next": "^16.2.0",
+    "next-auth": "5.0.0-beta.31",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@gg/eslint-config": "workspace:*",
+    "@gg/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.2.4",
+    "@types/node": "^22.15.3",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "tailwindcss": "^4.2.4",
+    "typescript": "5.9.2"
+  }
+}
