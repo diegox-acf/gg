@@ -135,10 +135,24 @@ class SagaOrchestratorTest {
   }
 
   @Test
-  void recover_payingWithDeclinedIntent_fails() {
+  void recover_payingAwaitingCard_staysPaying() {
+    // requires_payment_method = customer still entering their card (client-confirm, ADR-021).
+    // Recovery must NOT fail it (declines come via the webhook; abandoned ones via the sweeper).
     order.setStatus(OrderStatus.PAYING);
     order.setPaymentIntentId("pi_x");
     when(payments.getPaymentStatus("pi_x")).thenReturn("requires_payment_method");
+
+    saga.recover(7L);
+
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYING);
+    verify(outbox, never()).save(any());
+  }
+
+  @Test
+  void recover_payingCanceledIntent_fails() {
+    order.setStatus(OrderStatus.PAYING);
+    order.setPaymentIntentId("pi_x");
+    when(payments.getPaymentStatus("pi_x")).thenReturn("canceled");
 
     saga.recover(7L);
 

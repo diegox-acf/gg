@@ -14,6 +14,29 @@ const STEPS = ["Shipping", "Review", "Payment"];
 const SHIPPING_CENTS = 999;
 const TAX_RATE = 0.08;
 
+// Orders stores shipping_country as an ISO-3166 alpha-2 code (CHAR(2)), so the form must
+// collect a code, not a free-text name. A focused list keeps the select usable.
+const COUNTRIES: { code: string; name: string }[] = [
+  { code: "US", name: "United States" },
+  { code: "CA", name: "Canada" },
+  { code: "MX", name: "Mexico" },
+  { code: "BO", name: "Bolivia" },
+  { code: "BR", name: "Brazil" },
+  { code: "AR", name: "Argentina" },
+  { code: "CL", name: "Chile" },
+  { code: "CO", name: "Colombia" },
+  { code: "PE", name: "Peru" },
+  { code: "GB", name: "United Kingdom" },
+  { code: "IE", name: "Ireland" },
+  { code: "DE", name: "Germany" },
+  { code: "FR", name: "France" },
+  { code: "ES", name: "Spain" },
+  { code: "IT", name: "Italy" },
+  { code: "NL", name: "Netherlands" },
+  { code: "AU", name: "Australia" },
+  { code: "JP", name: "Japan" },
+];
+
 type Shipping = {
   email: string;
   firstName: string;
@@ -35,7 +58,7 @@ const EMPTY_SHIPPING: Shipping = {
   city: "",
   state: "",
   zip: "",
-  country: "",
+  country: "US", // ISO-3166 alpha-2 (matches Orders' CHAR(2) shipping_country)
 };
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -203,13 +226,26 @@ export function CheckoutFlow() {
                   error={errors.zip}
                   onChange={(e) => setShip("zip", e.target.value)}
                 />
-                <Input
-                  label="Country"
-                  placeholder="United States"
-                  value={shipping.country}
-                  error={errors.country}
-                  onChange={(e) => setShip("country", e.target.value)}
-                />
+                <div className="group flex flex-col">
+                  <label
+                    htmlFor="country"
+                    className="mb-[6px] block font-display text-[9px] font-semibold uppercase tracking-[0.12em] text-fg-3 transition-colors duration-150 group-focus-within:text-primary"
+                  >
+                    Country
+                  </label>
+                  <select
+                    id="country"
+                    value={shipping.country}
+                    onChange={(e) => setShip("country", e.target.value)}
+                    className="clip-cyber-input w-full rounded-none border border-border bg-elevated px-[14px] py-[10px] font-body text-[13px] text-fg-1 outline-none transition-[border-color] duration-150 focus:border-primary"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="mt-6">
                 <Button
