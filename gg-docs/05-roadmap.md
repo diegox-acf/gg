@@ -165,7 +165,7 @@ Reservation is **synchronous REST**, terminal commit/release is **Kafka** — se
 Pick from this list based on remaining time and what you want to learn next:
 
 - **Admin dashboard** (Next.js, separate app in monorepo) — **🔄 in progress** (ADR-022).
-  Milestone 1 (read-only ops console) built: `apps/admin` (port 3001) gated to the
+  Milestone 1 (read-only ops console) built: `apps/admin` (port 3002) gated to the
   `admin` role, shared `@gg/auth` package, backend admin read endpoints + `X-User-Roles`
   RBAC (Orders `/admin/orders`+`/stats`, Inventory `/admin/stock`). Dashboard, orders
   list/detail, inventory, and products pages wired to live data. Code/tests/build green;

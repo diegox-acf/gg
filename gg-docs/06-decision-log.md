@@ -828,7 +828,7 @@ shared, and how admin-only access is enforced across services.
 
 **Decision:**
 
-- **Separate Next.js app** `gg-storefront/apps/admin` (port 3001) in the existing
+- **Separate Next.js app** `gg-storefront/apps/admin` (port 3002 — 3001 is Grafana) in the existing
   Turborepo — not an `/admin` route inside the storefront. Keeps customer and operator
   concerns isolated and is the multi-app monorepo exercise the roadmap intends.
 - **Shared `@gg/auth` package.** The reusable auth core (Keycloak password-grant/refresh/
