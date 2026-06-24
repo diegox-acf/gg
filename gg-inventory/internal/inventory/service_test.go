@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // stubRepo records whether it was invoked and returns canned values. Validation
@@ -21,6 +23,11 @@ func (s *stubRepo) GetStock(context.Context, int64) (*Stock, error) {
 func (s *stubRepo) ListStock(context.Context, StockListFilter) (*StockPage, error) {
 	s.called = true
 	return &StockPage{}, nil
+}
+
+func (s *stubRepo) Restock(context.Context, int64, int) (*Stock, error) {
+	s.called = true
+	return &Stock{}, nil
 }
 
 func (s *stubRepo) Reserve(context.Context, ReserveRequest) ([]*Reservation, error) {
@@ -57,6 +64,33 @@ func (s *stubRepo) ExpiredReservationIDs(context.Context, int) ([]string, error)
 		return nil, nil
 	}
 	return []string{s.reservation.ReservationID}, nil
+}
+
+func TestRestockValidation(t *testing.T) {
+	cases := []struct {
+		name       string
+		productID  int64
+		quantity   int
+		wantErr    bool
+		wantCalled bool
+	}{
+		{"valid", 1, 5, false, true},
+		{"zero quantity", 1, 0, true, false},
+		{"negative quantity", 1, -3, true, false},
+		{"zero product id", 0, 5, true, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &stubRepo{}
+			_, err := NewService(repo).Restock(context.Background(), tc.productID, tc.quantity)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.wantCalled, repo.called)
+		})
+	}
 }
 
 func TestReserveValidation(t *testing.T) {

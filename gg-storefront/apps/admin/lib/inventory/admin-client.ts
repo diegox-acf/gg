@@ -55,3 +55,26 @@ export function listStock(
   const q = qs.toString();
   return getJSON<StockPage>(`/admin/stock${q ? `?${q}` : ""}`);
 }
+
+/** Admin restock: increase a product's available stock by `quantity` (> 0). */
+export async function restock(productId: number, quantity: number): Promise<Stock> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(`${BASE_URL}/admin/stock/${productId}/restock`, {
+      method: "POST",
+      signal: controller.signal,
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(await adminHeaders()),
+      },
+      body: JSON.stringify({ quantity }),
+    });
+    if (!res.ok) throw new Error(`inventory restock ${productId} → ${res.status}`);
+    return ((await res.json()) as { stock: Stock }).stock;
+  } finally {
+    clearTimeout(timer);
+  }
+}

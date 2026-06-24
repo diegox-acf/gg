@@ -3,6 +3,7 @@ import { cn } from "@gg/ui";
 import { listStock } from "@/lib/inventory/admin-client";
 import { formatDateTime } from "@/lib/format";
 import { Pagination } from "@/components/admin/pagination";
+import { RestockControl } from "@/components/admin/restock-control";
 
 const SIZE = 25;
 const THRESHOLD = 5;
@@ -64,12 +65,13 @@ export default async function InventoryPage({
                   <th className="px-4 py-3 text-right font-semibold">Available</th>
                   <th className="px-4 py-3 text-right font-semibold">Reserved</th>
                   <th className="px-4 py-3 font-semibold">Updated</th>
+                  <th className="px-4 py-3 text-right font-semibold">Restock</th>
                 </tr>
               </thead>
               <tbody className="font-body text-[13px] text-fg-1">
                 {data.items.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-fg-3">
+                    <td colSpan={5} className="px-4 py-8 text-center text-fg-3">
                       No stock records.
                     </td>
                   </tr>
@@ -92,6 +94,9 @@ export default async function InventoryPage({
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-fg-2">{s.reserved}</td>
                         <td className="px-4 py-3 text-fg-2">{formatDateTime(s.updated_at)}</td>
+                        <td className="px-4 py-3">
+                          <RestockControl productId={s.product_id} />
+                        </td>
                       </tr>
                     );
                   })

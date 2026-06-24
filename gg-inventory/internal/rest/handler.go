@@ -35,10 +35,11 @@ func NewRouter(logger *slog.Logger, svc *inventory.Service) *chi.Mux {
 		r.Post("/reservations/{reservation_id}/release", releaseReservationHandler(svc))
 	})
 
-	// Admin read API (gg-admin console). Guarded by the admin role (ADR-022).
+	// Admin API (gg-admin console). Guarded by the admin role (ADR-022).
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(RequireAdmin)
 		r.Get("/stock", listStockHandler(svc))
+		r.Post("/stock/{product_id}/restock", restockHandler(svc))
 	})
 
 	return r
@@ -156,6 +157,35 @@ func listStockHandler(svc *inventory.Service) http.HandlerFunc {
 			"total_elements": result.Total,
 			"total_pages":    totalPages,
 		})
+	}
+}
+
+// restockHandler increases a product's available stock (admin operation).
+func restockHandler(svc *inventory.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		productID, err := strconv.ParseInt(chi.URLParam(r, "product_id"), 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid product id")
+			return
+		}
+		var req struct {
+			Quantity int `json:"quantity"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+
+		stock, err := svc.Restock(r.Context(), productID, req.Quantity)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "no stock record for product")
+				return
+			}
+			writeDomainError(w, err, "failed to restock")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"stock": stock})
 	}
 }
 

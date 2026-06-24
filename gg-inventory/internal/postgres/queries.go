@@ -74,6 +74,17 @@ const (
 			(aggregate_type, aggregate_id, event_type, topic, payload, trace_id, traceparent)
 		VALUES ('Reservation', $1, $2, $3, $4::jsonb, $5, $6)`
 
+	// Stock-level outbox event (e.g. manual restock). aggregate is the Stock row
+	// (aggregate_id = product_id), distinct from the reservation events above.
+	queryInsertStockOutbox = `
+		INSERT INTO outbox
+			(aggregate_type, aggregate_id, event_type, topic, payload, trace_id, traceparent)
+		VALUES ('Stock', $1, $2, $3, $4::jsonb, $5, $6)`
+
+	// Existence probe so a restock against an unknown product returns a clean 404
+	// rather than the optimistic-lock "insufficient stock" path.
+	queryStockExists = `SELECT 1 FROM stock WHERE product_id = $1`
+
 	// Outbox relay (Milestone C). Oldest-first batch of unpublished rows, claimed with
 	// FOR UPDATE SKIP LOCKED so concurrent pollers take disjoint rows without blocking;
 	// the lock is held until the surrounding tx commits (by which point the rows are

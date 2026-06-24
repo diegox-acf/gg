@@ -31,6 +31,17 @@ func (s *Service) ListStock(ctx context.Context, filter StockListFilter) (*Stock
 	return s.repo.ListStock(ctx, filter)
 }
 
+// Restock adds quantity (> 0) to a product's available stock (admin operation).
+func (s *Service) Restock(ctx context.Context, productID int64, quantity int) (*Stock, error) {
+	if productID <= 0 {
+		return nil, fmt.Errorf("%w: product_id must be positive", ErrInvalidRequest)
+	}
+	if quantity <= 0 {
+		return nil, fmt.Errorf("%w: quantity must be positive", ErrInvalidRequest)
+	}
+	return s.repo.Restock(ctx, productID, quantity)
+}
+
 // Reserve validates the request and delegates the atomic reservation to the repo.
 func (s *Service) Reserve(ctx context.Context, req ReserveRequest) ([]*Reservation, error) {
 	if req.OrderID <= 0 {

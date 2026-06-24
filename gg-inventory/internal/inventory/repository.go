@@ -16,6 +16,11 @@ type Repository interface {
 	// row count, for the admin console. Read-only; no transaction needed.
 	ListStock(ctx context.Context, filter StockListFilter) (*StockPage, error)
 
+	// Restock increases a product's available stock by quantity in one transaction
+	// (CAS) and writes a StockRestocked outbox event. Returns the updated stock; an
+	// unknown product yields pgx.ErrNoRows.
+	Restock(ctx context.Context, productID int64, quantity int) (*Stock, error)
+
 	// Reserve reserves every item of the request in a single transaction, writing
 	// a reservation row + a StockReserved outbox event per item. It is idempotent
 	// on the request's idempotency key: replaying returns the existing rows without
